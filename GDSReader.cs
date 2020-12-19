@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.IO;
 using System.Text;
 
 namespace GDStoSVG
@@ -188,28 +189,33 @@ namespace GDStoSVG
 
         public void ReadFile(string fileName)
         {
-
-        }
-
-        private Record ReadRecord(byte[] data)
-        {
-            Record Record = new Record()
+            using (BinaryReader Reader = new BinaryReader(File.Open(fileName, FileMode.Open)))
             {
-                Length = 
-            };
-            return null;
+                long FileLength = Reader.BaseStream.Length;
+                while (Reader.BaseStream.Position < FileLength)
+                {
+                    ushort Length = Reader.ReadUInt16();
+                    RecordType Type = (RecordType)Reader.ReadUInt16();
+                    byte[] Data = Reader.ReadBytes(Length - 4); // Remove 4 bytes for the header for data length
+                    ReadRecord(Type, Data);
+                }
+            }
         }
 
-        private class Record
+        private void ReadRecord(RecordType type, byte[] data)
         {
-            public RecordType Type { get; set; }
-            public ushort Length { get; set; }
+            switch(type)
+            {
+                case RecordType.HEADER:
+                    Console.WriteLine(string.Format("File version is 0x{0:X2}{1:X2}", data[0], data[1]));
+                    break;
+                //case RecordType.
+            }
         }
 
-        private class RecordBitArray : Record { public bool[]? Data { get; set; } }
-        private class RecordShort : Record { public short Data { get; set; } }
-        private class RecordInt : Record { public int Data { get; set; } }
-        private class RecordDouble : Record { public double Data { get; set; } }
-        private class RecordString : Record { public string? Data { get; set; } }
+        private class Structure
+        {
+            private string a;
+        }
     }
 }
