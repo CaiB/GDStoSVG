@@ -8,7 +8,7 @@ namespace GDStoSVG
         {
             Console.WriteLine("Hello World!");
             // Expected parameters
-            // CSV file, GDS gile, SVG file, layer detect mode switch
+            // CSV file, GDS file, SVG file, layer detect mode switch
         }
     }
 }
