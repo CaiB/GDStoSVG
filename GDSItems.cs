@@ -15,6 +15,7 @@ namespace GDStoSVG
         public Dictionary<short, string>? Properties { get; set; }
         public bool TemplateFlag { get; set; } = false;
         public bool ExternalFlag { get; set; } = false;
+        public Tuple<int, int>[]? Coords = null;
 
         public abstract bool Check();
     }
@@ -24,7 +25,7 @@ namespace GDStoSVG
         public short? Layer = null;
         public short? Datatype = null;
 
-        public override bool Check() => this.Layer != null && this.Datatype != null;
+        public override bool Check() => this.Layer != null && this.Datatype != null; // TODO: Update
     }
 
     public class Path : Element
@@ -32,32 +33,35 @@ namespace GDStoSVG
         public short? Layer = null;
         public short? Datatype = null;
 
-        public override bool Check() => this.Layer != null && this.Datatype != null;
+        public override bool Check() => this.Layer != null && this.Datatype != null; // TODO: Update
     }
 
     public class StructureRef : Element
     {
 
-        public override bool Check() => true;
+        public override bool Check() => true; // TODO: Update
     }
 
     public class ArrayRef : Element
     {
-        public override bool Check() => true;
+        public override bool Check() => true; // TODO: Update
     }
 
     public class Text : Element
     {
-        public override bool Check() => true;
+        public short? Layer = null;
+        public override bool Check() => true; // TODO: Update
     }
 
     public class Node : Element
     {
-        public override bool Check() => true;
+        public short? Layer = null;
+        public override bool Check() => true; // TODO: Update
     }
 
     public class Box : Element
     {
-        public override bool Check() => true;
+        public short? Layer = null;
+        public override bool Check() => true; // TODO: Update
     }
 }

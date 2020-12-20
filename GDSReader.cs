@@ -40,6 +40,7 @@ namespace GDStoSVG
         private bool ReadRecord(RecordType type, byte[]? data)
         {
             //Console.WriteLine("Reading " + type.ToString());
+            Type ElementType;
             switch (type) // List sorted somewhat in order of expected file structure.
             {
                 case RecordType.HEADER:
@@ -129,20 +130,43 @@ namespace GDStoSVG
                     Console.WriteLine(string.Format("Plex ID is 0x{0:X2}{1:X2}{2:X2}{3:X2}", data[0], data[1], data[2], data[3]));
                     break;
                 case RecordType.LAYER:
-                    // TODO: Read layer
+                    if (this.CurrentElement == null) { throw new InvalidDataException("Trying to assign layer with no element."); }
+                    if (data == null || data.Length < 2) { throw new InvalidDataException("Layer assignment had insufficient data"); }
+                    short Layer = ParseShort(data, 0);
+                    ElementType = this.CurrentElement.GetType();
+                    if (ElementType == typeof(Boundary)) { ((Boundary)this.CurrentElement).Layer = Layer; }
+                    else if (ElementType == typeof(Path)) { ((Path)this.CurrentElement).Layer = Layer; }
+                    else if (ElementType == typeof(Text)) { ((Text)this.CurrentElement).Layer = Layer; }
+                    else if (ElementType == typeof(Node)) { ((Node)this.CurrentElement).Layer = Layer; }
+                    else if (ElementType == typeof(Box)) { ((Box)this.CurrentElement).Layer = Layer; }
+                    else { throw new InvalidOperationException("Tried to assign layer to element which cannot accept layer data."); }
                     break;
                 case RecordType.XY:
-                    // TODO: Read XY data
+                    if (this.CurrentElement == null) { throw new InvalidDataException("Trying to assign coordinates with no element."); }
+                    if (data == null || data.Length == 0) { throw new InvalidDataException("Coordinate assignment had insufficient data"); }
+                    if (data.Length % 8 != 0) { throw new InvalidDataException("XY coordinates had uneven number of elements"); }
+                    Tuple<int, int>[] Coords = new Tuple<int, int>[data.Length / 8];
+                    for(int i = 0; i < Coords.Length; i++)
+                    {
+                        Coords[i] = new Tuple<int, int>(ParseInt(data, i * 8), ParseInt(data, (i * 8) + 4));
+                    }
+                    this.CurrentElement.Coords = Coords;
                     break;
                 case RecordType.DATATYPE:
-                    // TODO: Read datatype
+                    if (this.CurrentElement == null) { throw new InvalidDataException("Trying to assign datatype with no element."); }
+                    if (data == null || data.Length < 2) { throw new InvalidDataException("Datatype assignment had insufficient data"); }
+                    short Datatype = ParseShort(data, 0);
+                    ElementType = this.CurrentElement.GetType();
+                    if (ElementType == typeof(Boundary)) { ((Boundary)this.CurrentElement).Datatype = Datatype; }
+                    else if (ElementType == typeof(Path)) { ((Path)this.CurrentElement).Datatype = Datatype; }
+                    else { throw new InvalidOperationException("Tried to assign datatype to element which cannot accept datatype info."); }
                     break;
 
                 case RecordType.PROPATTR:
                     if (this.CurrentProperty != null) { throw new InvalidDataException("New property starting before previous one had value assigned."); }
                     if (this.CurrentElement == null) { throw new InvalidDataException("Trying to assign property with no element to attach to."); }
                     if (data == null || data.Length < 2) { throw new InvalidDataException("Property key had insufficient data"); }
-                    this.CurrentProperty = (short)((data[0] << 8) | data[1]);
+                    this.CurrentProperty = ParseShort(data, 0);
                     break;
                 case RecordType.PROPVALUE:
                     if (this.CurrentProperty != null) { throw new InvalidDataException("New property starting before previous one had value assigned."); }
@@ -175,10 +199,22 @@ namespace GDStoSVG
         /// <param name="position"> Where to start reading the string in the data array. </param>
         /// <param name="length"> The expected string length. Trailing 0x00 characters are trimmed, so final length may be less. </param>
         /// <returns> The parsed ASCII string. </returns>
-        private string ParseString(byte[] data, ushort position, int length)
+        private string ParseString(byte[] data, int position, int length)
         {
             while (data[position + length - 1] == 0x00) { length--; } // Remove trailing 0x00 characters.
             return Encoding.ASCII.GetString(data, position, length);
+        }
+
+        private short ParseShort(byte[] data, int position)
+        {
+            if (this.IsLE) { return (short)((data[position] << 8) | data[position + 1]); }
+            else { return (short)(data[position] | (data[position + 1] << 8)); }
+        }
+
+        private int ParseInt(byte[] data, int position)
+        {
+            if (this.IsLE) { return ((data[position] << 24) | (data[position + 1] << 16) | (data[position + 2] << 8) | data[position + 3]); }
+            else { return (data[position] | (data[position + 1] << 8) | (data[position + 2] << 16) | (data[position + 3] << 24)); }
         }
 
         /// <summary> List of the different kinds of records that can be found in the GDS file. </summary>
