@@ -37,6 +37,10 @@ namespace GDStoSVG
         private Element? CurrentElement = null;
         private short? CurrentProperty = null;
 
+        /// <summary> Parses one record from the byte stream. </summary>
+        /// <param name="type"> The record type to parse. </param>
+        /// <param name="data"> The data associated with the record. </param>
+        /// <returns> Whether this is the end of the file, and we should stop parsing. </returns>
         private bool ReadRecord(RecordType type, byte[]? data)
         {
             //Console.WriteLine("Reading " + type.ToString());
@@ -55,7 +59,9 @@ namespace GDStoSVG
                 case RecordType.LIBSECUR: // optional
                     break;
                 case RecordType.LIBNAME:
-                    // TODO: Read name
+                    if (data == null || data.Length == 0) { throw new InvalidDataException("Library name had no data"); }
+                    string LibName = ParseString(data, 0, data.Length);
+                    GDSData.LibraryName = LibName;
                     break;
                 case RecordType.REFLIBS: // optional
                     // TODO: Read this?
@@ -77,7 +83,7 @@ namespace GDStoSVG
                 case RecordType.BGNSTR:
                     if (this.CurrentStructure != null) { throw new InvalidDataException("Structure started before finishing previous one."); }
                     this.CurrentStructure = new Structure();
-                    //TODO: Read last modify/access time
+                    // TODO: Read last modify/access time
                     break;
                 case RecordType.STRNAME:
                     if (this.CurrentStructure == null) { throw new InvalidDataException("Structure name found outside of a structure."); }
@@ -120,9 +126,11 @@ namespace GDStoSVG
                     this.CurrentElement = new Box();
                     break;
                 case RecordType.ELFLAGS:
-                    // TODO: Read flags
+                    if (this.CurrentElement == null) { throw new InvalidDataException("Trying to assign element flags with no element."); }
                     if (data == null || data.Length < 2) { throw new InvalidDataException("Element flags had insufficient data"); }
-                    Console.WriteLine(string.Format("Element flags are 0x{0:X2}{1:X2}", data[0], data[1]));
+                    ushort FlagData = (ushort)ParseShort(data, 0);
+                    this.CurrentElement.TemplateFlag = (FlagData & 0b1) == 0b1;
+                    this.CurrentElement.ExternalFlag = (FlagData & 0b10) == 0b10;
                     break;
                 case RecordType.PLEX:
                     // TODO: Read plex
