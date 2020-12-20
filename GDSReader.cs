@@ -163,9 +163,11 @@ namespace GDStoSVG
                     break;
                 case RecordType.PATHTYPE:
                     if (this.CurrentElement == null) { throw new InvalidDataException("Trying to assign path type with no element."); }
-                    if (this.CurrentElement.GetType() != typeof(Path)) { throw new InvalidOperationException("Cannot assign path type to non-path element."); }
                     if (data == null || data.Length < 2) { throw new InvalidDataException("Path type assignment had insufficient data"); }
-                    ((Path)this.CurrentElement).PathType = ParseShort(data, 0);
+                    short PathType = ParseShort(data, 0);
+                    if (this.CurrentElement is Path Pth) { Pth.PathType = PathType; }
+                    else if (this.CurrentElement is Text Txt2) { Txt2.PathType = PathType; }
+                    else { throw new InvalidOperationException("Tried to assign path type to element that does not support path type."); }
                     break;
                 case RecordType.WIDTH:
                     if (this.CurrentElement == null) { throw new InvalidDataException("Trying to assign width with no element."); }
@@ -253,6 +255,39 @@ namespace GDStoSVG
                     if (this.CurrentElement.GetType() != typeof(Box)) { throw new InvalidOperationException("Cannot assign box type to non-box element."); }
                     ((Box)this.CurrentElement).BoxType = ParseShort(data, 0);
                     break;
+                case RecordType.TEXTTYPE:
+                    if (this.CurrentElement == null) { throw new InvalidDataException("Trying to assign text type with no element."); }
+                    if (data == null || data.Length < 2) { throw new InvalidDataException("Text type had insufficient data"); }
+                    if (this.CurrentElement.GetType() != typeof(Text)) { throw new InvalidOperationException("Cannot assign text type to non-text element."); }
+                    ((Text)this.CurrentElement).TextType = ParseShort(data, 0);
+                    break;
+                case RecordType.PRESENTATION:
+                    if (this.CurrentElement == null) { throw new InvalidDataException("Trying to assign presentation with no element."); }
+                    if (data == null || data.Length < 2) { throw new InvalidDataException("Presentation had insufficient data"); }
+                    if (this.CurrentElement.GetType() != typeof(Text)) { throw new InvalidOperationException("Cannot assign presentation to non-text element."); }
+                    Text TextElement = (Text)this.CurrentElement;
+                    ushort PresData = (ushort)ParseShort(data, 0);
+                    switch(PresData & 0b11)
+                    {
+                        case 0b00: TextElement.HorizontalPresentation = Text.HorizontalAlign.LEFT; break;
+                        case 0b01: TextElement.HorizontalPresentation = Text.HorizontalAlign.CENTER; break;
+                        case 0b10: TextElement.HorizontalPresentation = Text.HorizontalAlign.RIGHT; break;
+                    }
+                    switch((PresData >> 2) & 0b11)
+                    {
+                        case 0b00: TextElement.VerticalPresentation = Text.VerticalAlign.TOP; break;
+                        case 0b01: TextElement.VerticalPresentation = Text.VerticalAlign.MIDDLE; break;
+                        case 0b10: TextElement.VerticalPresentation = Text.VerticalAlign.BOTTOM; break;
+                    }
+                    TextElement.Font = (byte)((PresData >> 4) & 0b11);
+                    break;
+                case RecordType.STRING:
+                    if (this.CurrentElement == null) { throw new InvalidDataException("Trying to assign string with no element."); }
+                    if (data == null || data.Length == 0) { throw new InvalidDataException("String had no data"); }
+                    if (this.CurrentElement.GetType() != typeof(Text)) { throw new InvalidOperationException("Cannot assign string to non-text element."); }
+                    string TextStr = ParseString(data, 0, data.Length);
+                    ((Text)this.CurrentElement).String = TextStr;
+                    break;
                 case RecordType.PROPATTR:
                     if (this.CurrentProperty != null) { throw new InvalidDataException("New property starting before previous one had value assigned."); }
                     if (this.CurrentElement == null) { throw new InvalidDataException("Trying to assign property with no element to attach to."); }
@@ -297,18 +332,30 @@ namespace GDStoSVG
             return Encoding.ASCII.GetString(data, position, length);
         }
 
+        /// <summary> Reads a <see cref="short"/> from a record's data. </summary>
+        /// <param name="data"> The byte array to read data from. </param>
+        /// <param name="position"> Where to start reading. </param>
+        /// <returns> The parsed short. </returns>
         private short ParseShort(byte[] data, int position)
         {
             if (this.IsLE) { return (short)((data[position] << 8) | data[position + 1]); }
             else { return (short)(data[position] | (data[position + 1] << 8)); }
         }
 
+        /// <summary> Reads an <see cref="int"/> from a record's data. </summary>
+        /// <param name="data"> The byte array to read data from. </param>
+        /// <param name="position"> Where to start reading. </param>
+        /// <returns> The parsed int. </returns>
         private int ParseInt(byte[] data, int position)
         {
             if (this.IsLE) { return ((data[position] << 24) | (data[position + 1] << 16) | (data[position + 2] << 8) | data[position + 3]); }
             else { return (data[position] | (data[position + 1] << 8) | (data[position + 2] << 16) | (data[position + 3] << 24)); }
         }
 
+        /// <summary> Reads an <see cref="double"/> from a record's data. </summary>
+        /// <param name="data"> The byte array to read data from. </param>
+        /// <param name="position"> Where to start reading. </param>
+        /// <returns> The parsed double. </returns>
         private double ParseDouble(byte[] data, int position)
         {
             byte[] DoubleData = new byte[8];

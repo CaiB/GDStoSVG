@@ -25,7 +25,7 @@ namespace GDStoSVG
         public short? Layer = null;
         public short? Datatype = null;
 
-        public override bool Check() => this.Layer != null && this.Datatype != null; // TODO: Update
+        public override bool Check() => this.Layer != null && this.Datatype != null && this.Coords != null;
     }
 
     public class Path : Element
@@ -35,7 +35,7 @@ namespace GDStoSVG
         public short PathType = 0;
         public int Width = 0;
 
-        public override bool Check() => this.Layer != null && this.Datatype != null; // TODO: Update
+        public override bool Check() => this.Layer != null && this.Datatype != null && this.Coords != null;
     }
 
     public class StructureRef : Element
@@ -47,7 +47,7 @@ namespace GDStoSVG
         public double Magnification = 1.0D;
         public double Angle = 0.0D; // degrees, counterclockwise
 
-        public override bool Check() => true; // TODO: Update
+        public override bool Check() => this.StructureName != null && this.Coords != null;
     }
 
     public class ArrayRef : Element
@@ -60,7 +60,7 @@ namespace GDStoSVG
         public double Angle = 0.0D; // degrees, counterclockwise
         public Tuple<short, short>? RepeatCount;
 
-        public override bool Check() => true; // TODO: Update
+        public override bool Check() => this.StructureName != null && this.Coords != null && this.RepeatCount != null;
     }
 
     public class Text : Element
@@ -72,8 +72,17 @@ namespace GDStoSVG
         public bool AngleAbsolute = false;
         public double Magnification = 1.0D;
         public double Angle = 0.0D; // degrees, counterclockwise
+        public short? TextType = null;
+        public byte Font = 0;
+        public VerticalAlign VerticalPresentation = VerticalAlign.TOP;
+        public HorizontalAlign HorizontalPresentation = HorizontalAlign.LEFT;
+        public short PathType = 0;
+        public string? String = null;
 
-        public override bool Check() => true; // TODO: Update
+        public override bool Check() => this.Layer != null && this.Coords != null && this.TextType != null && this.String != null;
+
+        public enum VerticalAlign { TOP, MIDDLE, BOTTOM }
+        public enum HorizontalAlign { LEFT, CENTER, RIGHT }
     }
 
     public class Node : Element
@@ -81,7 +90,7 @@ namespace GDStoSVG
         public short? Layer = null;
         public short? NodeType = null;
 
-        public override bool Check() => true; // TODO: Update
+        public override bool Check() => this.Layer != null && this.NodeType != null && this.Coords != null;
     }
 
     public class Box : Element
@@ -89,6 +98,6 @@ namespace GDStoSVG
         public short? Layer = null;
         public short? BoxType = null;
 
-        public override bool Check() => true; // TODO: Update
+        public override bool Check() => this.Layer != null && this.BoxType != null && this.Coords != null;
     }
 }
