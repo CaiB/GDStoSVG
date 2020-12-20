@@ -7,6 +7,180 @@ namespace GDStoSVG
 {
     public class GDSReader
     {
+        /// <summary> Whether the platform we are running on is little-endian (true in most cases). </summary>
+        private readonly bool IsLE;
+
+        /// <summary> A list of the structures present in the file. </summary>
+        private readonly List<Structure> Structures = new List<Structure>();
+
+        public GDSReader() { this.IsLE = BitConverter.IsLittleEndian; }
+
+        public void ReadFile(string fileName)
+        {
+            using (BinaryReader Reader = new BinaryReader(File.Open(fileName, FileMode.Open)))
+            {
+                long FileLength = Reader.BaseStream.Length;
+                while (Reader.BaseStream.Position < FileLength)
+                {
+                    ushort Length = ReadUShort(Reader);
+                    RecordType Type = (RecordType)ReadUShort(Reader);
+                    int DataLength = Length - 4; // Remove 4 bytes for the header for data length
+                    byte[]? Data = (DataLength <= 0) ? null : Reader.ReadBytes(DataLength);
+                    bool StopReading = ReadRecord(Type, Data);
+                    if (StopReading) { break; }
+                }
+            }
+            Console.WriteLine("Read " + this.Structures.Count + " structures.");
+        }
+
+        private Structure? CurrentStructure = null;
+        private Element? CurrentElement = null;
+        private short? CurrentProperty = null;
+
+        private bool ReadRecord(RecordType type, byte[]? data)
+        {
+            //Console.WriteLine("Reading " + type.ToString());
+            switch (type) // List sorted somewhat in order of expected file structure.
+            {
+                case RecordType.HEADER:
+                    if (data == null || data.Length < 2) { throw new InvalidDataException("Header had insufficient data"); }
+                    Console.WriteLine(string.Format("File version is 0x{0:X2}{1:X2}", data[0], data[1]));
+                    break;
+                case RecordType.BGNLIB:
+                    // TODO: Read last modified/accessed times
+                    break;
+                case RecordType.LIBDIRSIZE: // optional
+                case RecordType.SRFNAME: // optional
+                case RecordType.LIBSECUR: // optional
+                    break;
+                case RecordType.LIBNAME:
+                    // TODO: Read name
+                    break;
+                case RecordType.REFLIBS: // optional
+                    // TODO: Read this?
+                    break;
+                case RecordType.FONTS: // optional
+                case RecordType.ATTRTABLE: // optional
+                case RecordType.GENERATIONS: // optional
+                    break;
+                case RecordType.FORMAT:
+                    break;
+                case RecordType.MASK: // optional
+                case RecordType.ENDMASKS: // optional
+                    break;
+                case RecordType.UNITS:
+                    // TODO: Read unit data
+                    break;
+                case RecordType.ENDLIB:
+                    return true;
+                case RecordType.BGNSTR:
+                    if (this.CurrentStructure != null) { throw new InvalidDataException("Structure started before finishing previous one."); }
+                    this.CurrentStructure = new Structure();
+                    //TODO: Read last modify/access time
+                    break;
+                case RecordType.STRNAME:
+                    if (this.CurrentStructure == null) { throw new InvalidDataException("Structure name found outside of a structure."); }
+                    if (data == null || data.Length == 0) { throw new InvalidDataException("Structure name had no data"); }
+                    this.CurrentStructure.Name = ParseString(data, 0, data.Length);
+                    break;
+                case RecordType.STRCLASS: // optional
+                    break;
+                case RecordType.ENDSTR:
+                    if (this.CurrentStructure == null) { throw new InvalidDataException("Structure end found outside of a structure."); }
+                    this.Structures.Add(this.CurrentStructure);
+                    this.CurrentStructure = null;
+                    break;
+                case RecordType.BOUNDARY:
+                    if (this.CurrentElement != null) { throw new InvalidDataException("Element started before finishing previous one."); }
+                    this.CurrentElement = new Boundary();
+                    break;
+                case RecordType.PATH:
+                    if (this.CurrentElement != null) { throw new InvalidDataException("Element started before finishing previous one."); }
+                    this.CurrentElement = new Path();
+                    break;
+                case RecordType.SREF:
+                    if (this.CurrentElement != null) { throw new InvalidDataException("Element started before finishing previous one."); }
+                    this.CurrentElement = new StructureRef();
+                    break;
+                case RecordType.AREF:
+                    if (this.CurrentElement != null) { throw new InvalidDataException("Element started before finishing previous one."); }
+                    this.CurrentElement = new ArrayRef();
+                    break;
+                case RecordType.TEXT:
+                    if (this.CurrentElement != null) { throw new InvalidDataException("Element started before finishing previous one."); }
+                    this.CurrentElement = new Text();
+                    break;
+                case RecordType.NODE:
+                    if (this.CurrentElement != null) { throw new InvalidDataException("Element started before finishing previous one."); }
+                    this.CurrentElement = new Node();
+                    break;
+                case RecordType.BOX:
+                    if (this.CurrentElement != null) { throw new InvalidDataException("Element started before finishing previous one."); }
+                    this.CurrentElement = new Box();
+                    break;
+                case RecordType.ELFLAGS:
+                    // TODO: Read flags
+                    if (data == null || data.Length < 2) { throw new InvalidDataException("Element flags had insufficient data"); }
+                    Console.WriteLine(string.Format("Element flags are 0x{0:X2}{1:X2}", data[0], data[1]));
+                    break;
+                case RecordType.PLEX:
+                    // TODO: Read plex
+                    if (data == null || data.Length < 4) { throw new InvalidDataException("Plex had insufficient data"); }
+                    Console.WriteLine(string.Format("Plex ID is 0x{0:X2}{1:X2}{2:X2}{3:X2}", data[0], data[1], data[2], data[3]));
+                    break;
+                case RecordType.LAYER:
+                    // TODO: Read layer
+                    break;
+                case RecordType.XY:
+                    // TODO: Read XY data
+                    break;
+                case RecordType.DATATYPE:
+                    // TODO: Read datatype
+                    break;
+
+                case RecordType.PROPATTR:
+                    if (this.CurrentProperty != null) { throw new InvalidDataException("New property starting before previous one had value assigned."); }
+                    if (this.CurrentElement == null) { throw new InvalidDataException("Trying to assign property with no element to attach to."); }
+                    if (data == null || data.Length < 2) { throw new InvalidDataException("Property key had insufficient data"); }
+                    this.CurrentProperty = (short)((data[0] << 8) | data[1]);
+                    break;
+                case RecordType.PROPVALUE:
+                    if (this.CurrentProperty != null) { throw new InvalidDataException("New property starting before previous one had value assigned."); }
+                    if (this.CurrentElement == null) { throw new InvalidDataException("Trying to assign property with no element to attach to."); }
+                    if (this.CurrentProperty == null) { throw new InvalidDataException("Trying to assign property data without key."); }
+                    if (data == null || data.Length == 0) { throw new InvalidDataException("Property value had insufficient data"); }
+                    if (this.CurrentElement.Properties == null) { this.CurrentElement.Properties = new Dictionary<short, string>(); }
+                    string Value = ParseString(data, 0, data.Length);
+                    this.CurrentElement.Properties.Add((short)this.CurrentProperty, Value);
+                    this.CurrentProperty = null;
+                    break;
+                case RecordType.ENDEL:
+                    if (this.CurrentStructure == null) { throw new InvalidDataException("Element ended outside of structure."); }
+                    if (this.CurrentElement == null) { throw new InvalidDataException("Element ending before starting."); }
+                    if (this.CurrentStructure.Elements == null) { this.CurrentStructure.Elements = new List<Element>(); }
+                    this.CurrentStructure.Elements.Add(this.CurrentElement);
+                    this.CurrentElement = null;
+                    break;
+            }
+            return false;
+        }
+
+        /// <summary> Reads an unsigned 16-bit integer from the datastream, in big-endian format. </summary>
+        /// <param name="reader"> The data source to read from. </param>
+        /// <returns> The data read. </returns>
+        private ushort ReadUShort(BinaryReader reader) => this.IsLE ? (ushort)((reader.ReadByte() << 8) | reader.ReadByte()) : reader.ReadUInt16();
+
+        /// <summary> Reads a string from a record's data. </summary>
+        /// <param name="data"> The byte array to read data from. </param>
+        /// <param name="position"> Where to start reading the string in the data array. </param>
+        /// <param name="length"> The expected string length. Trailing 0x00 characters are trimmed, so final length may be less. </param>
+        /// <returns> The parsed ASCII string. </returns>
+        private string ParseString(byte[] data, ushort position, int length)
+        {
+            while (data[position + length - 1] == 0x00) { length--; } // Remove trailing 0x00 characters.
+            return Encoding.ASCII.GetString(data, position, length);
+        }
+
         /// <summary> List of the different kinds of records that can be found in the GDS file. </summary>
         private enum RecordType : ushort
         {
@@ -174,6 +348,10 @@ namespace GDStoSVG
             /// <remarks> Data: <see cref="short"/> </remarks>
             TAPECODE = 0x3302,
 
+            /// <summary> Calma CAD software internal use </summary>
+            /// <remarks> Data: <see cref="bool[]"/> </remarks>
+            STRCLASS = 0x3401,
+
             /// <summary> Format type </summary>
             /// <remarks> Data: <see cref="short"/> </remarks>
             FORMAT = 0x3602,
@@ -184,38 +362,19 @@ namespace GDStoSVG
 
             /// <summary> End of <see cref="RecordType.MASK"/> </summary>
             /// <remarks> Data: None </remarks>
-            ENDMASKS = 0x3800
-        }
+            ENDMASKS = 0x3800,
 
-        public void ReadFile(string fileName)
-        {
-            using (BinaryReader Reader = new BinaryReader(File.Open(fileName, FileMode.Open)))
-            {
-                long FileLength = Reader.BaseStream.Length;
-                while (Reader.BaseStream.Position < FileLength)
-                {
-                    ushort Length = Reader.ReadUInt16();
-                    RecordType Type = (RecordType)Reader.ReadUInt16();
-                    byte[] Data = Reader.ReadBytes(Length - 4); // Remove 4 bytes for the header for data length
-                    ReadRecord(Type, Data);
-                }
-            }
-        }
+            /// <summary> Specifies number of pages in library directory </summary>
+            /// <remarks> Data: <see cref="short"/> </remarks>
+            LIBDIRSIZE = 0x3902,
 
-        private void ReadRecord(RecordType type, byte[] data)
-        {
-            switch(type)
-            {
-                case RecordType.HEADER:
-                    Console.WriteLine(string.Format("File version is 0x{0:X2}{1:X2}", data[0], data[1]));
-                    break;
-                //case RecordType.
-            }
-        }
+            /// <summary> Sticks Rules FIle name </summary>
+            /// <remarks> Data: <see cref="string"/> </remarks>
+            SRFNAME = 0x3A06,
 
-        private class Structure
-        {
-            private string a;
+            /// <summary> Array of ACL data </summary>
+            /// <remarks> Data: <see cref="short"/> </remarks>
+            LIBSECUR = 0x3B02
         }
     }
 }
