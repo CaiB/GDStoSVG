@@ -161,7 +161,98 @@ namespace GDStoSVG
                     else if (ElementType == typeof(Path)) { ((Path)this.CurrentElement).Datatype = Datatype; }
                     else { throw new InvalidOperationException("Tried to assign datatype to element which cannot accept datatype info."); }
                     break;
-
+                case RecordType.PATHTYPE:
+                    if (this.CurrentElement == null) { throw new InvalidDataException("Trying to assign path type with no element."); }
+                    if (this.CurrentElement.GetType() != typeof(Path)) { throw new InvalidOperationException("Cannot assign path type to non-path element."); }
+                    if (data == null || data.Length < 2) { throw new InvalidDataException("Path type assignment had insufficient data"); }
+                    ((Path)this.CurrentElement).PathType = ParseShort(data, 0);
+                    break;
+                case RecordType.WIDTH:
+                    if (this.CurrentElement == null) { throw new InvalidDataException("Trying to assign width with no element."); }
+                    if (data == null || data.Length < 4) { throw new InvalidDataException("Width assignment had insufficient data"); }
+                    int Width = ParseInt(data, 0);
+                    ElementType = this.CurrentElement.GetType();
+                    if (ElementType == typeof(Path)) { ((Path)this.CurrentElement).Width = Width; }
+                    else if (ElementType == typeof(Text)) { ((Text)this.CurrentElement).Width = Width; }
+                    else { throw new InvalidOperationException("Tried to assign width to element which cannot accept width data."); }
+                    break;
+                case RecordType.BGNEXTN: // optional; Specific to CustomPlus software.
+                case RecordType.ENDEXTN:
+                    break;
+                case RecordType.SNAME:
+                    if (this.CurrentElement == null) { throw new InvalidDataException("Trying to assign structure reference with no element."); }
+                    if (data == null || data.Length == 0) { throw new InvalidDataException("Structure reference name had no data"); }
+                    string StructRefName = ParseString(data, 0, data.Length);
+                    ElementType = this.CurrentElement.GetType();
+                    if (ElementType == typeof(StructureRef)) { ((StructureRef)this.CurrentElement).StructureName = StructRefName; }
+                    else if (ElementType == typeof(ArrayRef)) { ((ArrayRef)this.CurrentElement).StructureName = StructRefName; }
+                    else { throw new InvalidOperationException("Tried to assign structure reference name to non-reference element."); }
+                    break;
+                case RecordType.STRANS:
+                    if (this.CurrentElement == null) { throw new InvalidDataException("Trying to assign structure transform with no element."); }
+                    if (data == null || data.Length < 2) { throw new InvalidDataException("Element flags had insufficient data"); }
+                    ushort TransformData = (ushort)ParseShort(data, 0);
+                    bool Reflect = (TransformData & 0x8000) == 0x8000;
+                    bool AbsMag = (TransformData & 0x0004) == 0x0004;
+                    bool AbsAng = (TransformData & 0x0002) == 0x0002;
+                    if (this.CurrentElement is StructureRef SRef)
+                    {
+                        SRef.XReflect = Reflect;
+                        SRef.MagnificationAbsolute = AbsMag;
+                        SRef.AngleAbsolute = AbsAng;
+                    }
+                    else if (this.CurrentElement is ArrayRef ARef)
+                    {
+                        ARef.XReflect = Reflect;
+                        ARef.MagnificationAbsolute = AbsMag;
+                        ARef.AngleAbsolute = AbsAng;
+                    }
+                    else if (this.CurrentElement is Text Txt)
+                    {
+                        Txt.XReflect = Reflect;
+                        Txt.MagnificationAbsolute = AbsMag;
+                        Txt.AngleAbsolute = AbsAng;
+                    }
+                    else { throw new InvalidOperationException("Tried to assign structure transform properties to non-reference element."); }
+                    break;
+                case RecordType.MAG:
+                    if (this.CurrentElement == null) { throw new InvalidDataException("Trying to assign magnification with no element."); }
+                    if (data == null || data.Length < 8) { throw new InvalidDataException("Element magnification had insufficient data"); }
+                    double Mag = ParseDouble(data, 0);
+                    if (this.CurrentElement is StructureRef StRef) { StRef.Magnification = Mag; }
+                    else if (this.CurrentElement is ArrayRef ArRef) { ArRef.Magnification = Mag; }
+                    else if (this.CurrentElement is Text Txt2) { Txt2.Magnification = Mag; }
+                    else { throw new InvalidOperationException("Tried to assign magnification to element that cannot take magnification parameter."); }
+                    break;
+                case RecordType.ANGLE:
+                    if (this.CurrentElement == null) { throw new InvalidDataException("Trying to assign angle with no element."); }
+                    if (data == null || data.Length < 8) { throw new InvalidDataException("Element angle had insufficient data"); }
+                    double Angle = ParseDouble(data, 0);
+                    if (this.CurrentElement is StructureRef StRef2) { StRef2.Angle = Angle; }
+                    else if (this.CurrentElement is ArrayRef ArRef2) { ArRef2.Angle = Angle; }
+                    else if (this.CurrentElement is Text Txt3) { Txt3.Angle = Angle; }
+                    else { throw new InvalidOperationException("Tried to assign angle to element that cannot take angle parameter."); }
+                    break;
+                case RecordType.COLROW:
+                    if (this.CurrentElement == null) { throw new InvalidDataException("Trying to assign col/row count with no element."); }
+                    if (data == null || data.Length < 4) { throw new InvalidDataException("Col/row count had insufficient data"); }
+                    if (this.CurrentElement.GetType() != typeof(ArrayRef)) { throw new InvalidOperationException("Cannot assign col/row count to non-array element."); }
+                    short Col = ParseShort(data, 0);
+                    short Row = ParseShort(data, 2);
+                    ((ArrayRef)this.CurrentElement).RepeatCount = new Tuple<short, short>(Col, Row);
+                    break;
+                case RecordType.NODETYPE:
+                    if (this.CurrentElement == null) { throw new InvalidDataException("Trying to assign node type with no element."); }
+                    if (data == null || data.Length < 2) { throw new InvalidDataException("Node type had insufficient data"); }
+                    if (this.CurrentElement.GetType() != typeof(Node)) { throw new InvalidOperationException("Cannot assign node type to non-node element."); }
+                    ((Node)this.CurrentElement).NodeType = ParseShort(data, 0);
+                    break;
+                case RecordType.BOXTYPE:
+                    if (this.CurrentElement == null) { throw new InvalidDataException("Trying to assign box type with no element."); }
+                    if (data == null || data.Length < 2) { throw new InvalidDataException("Box type had insufficient data"); }
+                    if (this.CurrentElement.GetType() != typeof(Box)) { throw new InvalidOperationException("Cannot assign box type to non-box element."); }
+                    ((Box)this.CurrentElement).BoxType = ParseShort(data, 0);
+                    break;
                 case RecordType.PROPATTR:
                     if (this.CurrentProperty != null) { throw new InvalidDataException("New property starting before previous one had value assigned."); }
                     if (this.CurrentElement == null) { throw new InvalidDataException("Trying to assign property with no element to attach to."); }
@@ -182,6 +273,7 @@ namespace GDStoSVG
                     if (this.CurrentStructure == null) { throw new InvalidDataException("Element ended outside of structure."); }
                     if (this.CurrentElement == null) { throw new InvalidDataException("Element ending before starting."); }
                     if (this.CurrentStructure.Elements == null) { this.CurrentStructure.Elements = new List<Element>(); }
+                    if (!this.CurrentElement.Check()) { Console.WriteLine("Element does not have all required data present."); }
                     this.CurrentStructure.Elements.Add(this.CurrentElement);
                     this.CurrentElement = null;
                     break;
@@ -215,6 +307,14 @@ namespace GDStoSVG
         {
             if (this.IsLE) { return ((data[position] << 24) | (data[position + 1] << 16) | (data[position + 2] << 8) | data[position + 3]); }
             else { return (data[position] | (data[position + 1] << 8) | (data[position + 2] << 16) | (data[position + 3] << 24)); }
+        }
+
+        private double ParseDouble(byte[] data, int position)
+        {
+            byte[] DoubleData = new byte[8];
+            Array.Copy(data, position, DoubleData, 0, 8);
+            if (this.IsLE) { Array.Reverse(DoubleData); }
+            return BitConverter.ToDouble(DoubleData);
         }
 
         /// <summary> List of the different kinds of records that can be found in the GDS file. </summary>
@@ -375,6 +475,14 @@ namespace GDStoSVG
             /// <summary> Plex number </summary>
             /// <remarks> Data: <see cref="int"/> </remarks>
             PLEX = 0x2F03,
+
+            /// <summary> Path beginning extension length, specific to CustomPlus software. </summary>
+            /// <remarks> Data: <see cref="int"/> </remarks>
+            BGNEXTN = 0x3003,
+
+            /// <summary> Path end extension length, specific to CustomPlus software. </summary>
+            /// <remarks> Data: <see cref="int"/> </remarks>
+            ENDEXTN = 0x3103,
 
             /// <summary> Tape number </summary>
             /// <remarks> Data: <see cref="short"/> </remarks>
