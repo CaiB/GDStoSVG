@@ -15,6 +15,8 @@ namespace GDStoSVG
 
         public GDSReader() { this.IsLE = BitConverter.IsLittleEndian; }
 
+        /// <summary> Reads all data from the given GDS file, and stores the results in <see cref="GDSData"/> fields. </summary>
+        /// <param name="fileName"> The name of the file to read from. </param>
         public void ReadFile(string fileName)
         {
             using (BinaryReader Reader = new BinaryReader(File.Open(fileName, FileMode.Open)))
@@ -30,11 +32,18 @@ namespace GDStoSVG
                     if (StopReading) { break; }
                 }
             }
-            Console.WriteLine("Read " + this.Structures.Count + " structures.");
+            Console.WriteLine("Finished reading " + this.Structures.Count + " structures.");
+            foreach (Structure Str in this.Structures) { GDSData.Structures.Add(Str.Name, Str); }
+            GDSData.LastStructure = this.Structures[this.Structures.Count - 1];
         }
 
+        /// <summary> Used while parsing the file. Keeps the incomplete structure that data is being read about currently. </summary>
         private Structure? CurrentStructure = null;
+
+        /// <summary> Used while parsing the file. Keeps the incomplete element that data is being read about currently. </summary>
         private Element? CurrentElement = null;
+
+        /// <summary> Used while parsing the file. Keeps the property key for which a value still needs to be read. </summary>
         private short? CurrentProperty = null;
 
         /// <summary> Parses one record from the byte stream. </summary>
