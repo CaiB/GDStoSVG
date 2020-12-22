@@ -98,6 +98,7 @@ namespace GDStoSVG
                     if (this.CurrentStructure == null) { throw new InvalidDataException("Structure name found outside of a structure."); }
                     if (data == null || data.Length == 0) { throw new InvalidDataException("Structure name had no data"); }
                     this.CurrentStructure.Name = ParseString(data, 0, data.Length);
+                    Console.WriteLine("Reading structure \"{0}\"", this.CurrentStructure.Name);
                     break;
                 case RecordType.STRCLASS: // optional
                     break;

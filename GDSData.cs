@@ -29,7 +29,12 @@ namespace GDStoSVG
             }
             Layers.Sort();
             Console.WriteLine("Found " + Layers.Count + " layers:");
-            foreach (short Layer in Layers) { Console.WriteLine("> " + Layer); }
+            foreach (short Layer in Layers)
+            {
+                string LayerName = "[NOT ASSIGNED]";
+                if (LayerConfig.Layers.ContainsKey(Layer)) { LayerName = LayerConfig.Layers[Layer].Name; }
+                Console.WriteLine("> " + Layer + " -> " + LayerName);
+            }
         }
     }
 }

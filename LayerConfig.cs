@@ -7,13 +7,13 @@ namespace GDStoSVG
 {
     public class LayerConfig
     {
-        /// <summary> The currently configured </summary>
-        public static Layer[]? Layers { get; private set; }
+        /// <summary> The currently configured layers </summary>
+        public static Dictionary<short, Layer> Layers { get; private set; } = new Dictionary<short, Layer>();
 
         /// <summary> Populates <see cref="Layers"/> with data from a CSV file. </summary>
-        /// <remarks> CSV file should be formatted with no header, with 4 entries per line: [Name:string], [ID:byte], [Colour:uint hex], [Opacity:float] </remarks>
+        /// <remarks> CSV file should be formatted with no header, with 4 entries per line: [Name:string], [ID:short], [Colour:uint hex], [Opacity:float] </remarks>
         /// <param name="configFile"> The filename of a CSV file to read from. </param>
-        public void ReadConfig(string configFile)
+        public static void ReadConfig(string configFile)
         {
             List<Layer> LayerList = new List<Layer>();
             using (StreamReader Reader = new StreamReader(configFile))
@@ -26,7 +26,7 @@ namespace GDStoSVG
                     Layer Layer = new Layer
                     {
                         Name = Parts[0],
-                        ID = byte.Parse(Parts[1]),
+                        ID = short.Parse(Parts[1]),
                         Colour = Convert.ToUInt32(Parts[2], 16), // hex
                         Opacity = float.Parse(Parts[3])
                     };
@@ -34,7 +34,7 @@ namespace GDStoSVG
                     Line = Reader.ReadLine();
                 }
             }
-            Layers = LayerList.ToArray();
+            foreach (Layer Layer in LayerList) { Layers.Add(Layer.ID, Layer); }
         }
     }
 
@@ -45,7 +45,7 @@ namespace GDStoSVG
         public string Name { get; set; } = "Unnamed Layer";
 
         /// <summary> The layer ID used in the GDSII file. </summary>
-        public byte ID { get; set; }
+        public short ID { get; set; }
 
         /// <summary> The colour to give the layer in the output SVG. </summary>
         public uint Colour { get; set; }
