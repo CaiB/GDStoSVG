@@ -48,13 +48,20 @@ namespace GDStoSVG
                 WriteElement(Element);
             }
 
-            this.Writer.WriteLine("<svg viewBox=\"{0} {1} {2} {3}\" version=\"1.1\">", this.MinX, -this.MaxY, this.MaxX, -this.MinY);
+            this.Writer.WriteLine("<svg viewBox=\"{0} {1} {2} {3}\" version=\"1.1\">", this.MinX, -this.MaxY, this.MaxX - this.MinX, this.MaxY - this.MinY);
 
-            List<Layer> LayersSorted = LayerConfig.Layers.Values.OrderBy(x => x.SortOrder).ToList(); // TODO Check order and see if help needs to be updated
+            List<Layer> LayersSorted = LayerConfig.Layers.Values.OrderBy(x => x.SortOrder).ToList();
             foreach(Layer Layer in LayersSorted)
             {
+                if(!this.Output.ContainsKey(Layer.ID)) { continue; } // Nothing to output for this layer.
                 this.Writer.WriteLine(@"<g id=""" + Layer.Name + @""">");
                 foreach (string Line in this.Output[Layer.ID]) { this.Writer.WriteLine(Line); }
+                this.Writer.WriteLine("</g>");
+            }
+            foreach(short ID in this.Output.Keys.Where(x => !LayersSorted.Exists(y => y.ID == x))) // Find layers in this.Output that aren't defined in the CSV file.
+            {
+                this.Writer.WriteLine(@"<g id=""Unknown Layer " + ID + @""">");
+                foreach (string Line in this.Output[ID]) { this.Writer.WriteLine(Line); }
                 this.Writer.WriteLine("</g>");
             }
         }
@@ -162,6 +169,7 @@ namespace GDStoSVG
         public void WriteText(Text text, Transform trans) // TODO add text support
         {
             // if (!this.Output.ContainsKey((short)text.Layer!)) { this.Output.Add((short)text.Layer, new List<string>()); }
+            Console.WriteLine("Text output :(");
         }
 
         public void WriteNode(Node node, Transform trans)

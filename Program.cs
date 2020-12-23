@@ -9,6 +9,7 @@ namespace GDStoSVG
         // TODO LIST
         // Implement rendering text and other items
         // Text render only certain levels deep
+        // Implement polygon union in-application. Inkscape is insanely slow doing this.
 
         public static bool Debug = false;
         public static bool Info = false;
@@ -24,31 +25,12 @@ namespace GDStoSVG
 
             for(int i = 0; i < args.Length; i++)
             {
-                if (i == 0 || (args[i].EndsWith(".gds", StringComparison.OrdinalIgnoreCase) && GDSFile == null))
-                {
-                    GDSFile = args[i];
-                }
-                else if (args[i].EndsWith(".csv", StringComparison.OrdinalIgnoreCase) && CSVFile == null)
-                {
-                    CSVFile = args[i];
-                }
-                else if (args[i].EndsWith(".svg", StringComparison.OrdinalIgnoreCase) && SVGFile == null)
-                {
-                    SVGFile = args[i];
-                }
-                else if (args[i].Equals("-unit", StringComparison.OrdinalIgnoreCase) && args.Length > i + 1)
-                {
-                    TopUnit = args[i + 1];
-                    i++;
-                }
-                else if (args[i].Equals("-info", StringComparison.OrdinalIgnoreCase))
-                {
-                    Info = true;
-                }
-                else if (args[i].Equals("-debug", StringComparison.OrdinalIgnoreCase))
-                {
-                    Debug = true;
-                }
+                if (i == 0) { GDSFile = args[i]; }
+                else if (args[i].Equals("-csv", StringComparison.OrdinalIgnoreCase) && args.Length > i + 1) { CSVFile = args[i + 1]; }
+                else if (args[i].Equals("-svg", StringComparison.OrdinalIgnoreCase) && args.Length > i + 1) { SVGFile = args[i + 1]; }
+                else if (args[i].Equals("-unit", StringComparison.OrdinalIgnoreCase) && args.Length > i + 1) { TopUnit = args[i + 1]; }
+                else if (args[i].Equals("-info", StringComparison.OrdinalIgnoreCase)) { Info = true; }
+                else if (args[i].Equals("-debug", StringComparison.OrdinalIgnoreCase)) { Debug = true; }
             }
 
             if (GDSFile == null) { PrintHelp(); return; }
@@ -81,12 +63,13 @@ namespace GDStoSVG
         {
             Console.WriteLine("GDStoSVG: Converts GDSII data into SVG graphics for printing or viewing.");
             Console.WriteLine("Usage Notes: (<> means required, [] means optional)");
-            Console.WriteLine("GDStoSVG.exe <GDS file> [CSV file] [SVG file] [-unit NAME] [-info] [-debug]");
+            Console.WriteLine("GDStoSVG.exe <GDS file> [-csv LAYERS] [-svg OUTPUT] [-unit NAME] [-info] [-debug]");
             Console.WriteLine("  <GDS file>: Name of the GDSII file to read");
-            Console.WriteLine("  [CSV file]: Name of the CSV file containing layer definitions");
+            Console.WriteLine("  [-csv LAYERS]: Name of the CSV file containing layer definitions");
             Console.WriteLine("    CSV expected format: No header, each line should contain:");
             Console.WriteLine("    <Name>, <ID in range -32768 to 32767>, <Colour, RRGGBB hex>, <Opacity in range 0.0 to 1.0>");
             Console.WriteLine("    Layers will be stacked in list order, with the bottom line of CSV file on top in SVG.");
+            Console.WriteLine("  [-svg OUTPUT]: The SVG file to output to. If not specified, GDS file name will be used.");
             Console.WriteLine("  [-unit NAME]: Name of the top-level design unit to output, including all child elements.");
             Console.WriteLine("  [-info]: Outputs extra info about layers and units to help you in setting up output.");
             Console.WriteLine("  [-debug]: Use this if the program is misbehaving and you need to ask the developer.");
