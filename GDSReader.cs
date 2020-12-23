@@ -32,9 +32,14 @@ namespace GDStoSVG
                     if (StopReading) { break; }
                 }
             }
-            Console.WriteLine("Finished reading " + this.Structures.Count + " structures.");
-            foreach (Structure Str in this.Structures) { GDSData.Structures.Add(Str.Name, Str); }
             GDSData.LastStructure = this.Structures[this.Structures.Count - 1];
+
+            Console.WriteLine("Found {0} units in GDS file{1}", this.Structures.Count, (Program.Info ? ":" : "."));
+            foreach (Structure Str in this.Structures)
+            {
+                if (Program.Info) { Console.WriteLine("  Unit \"{0}\"{1}", Str.Name, (Str == GDSData.LastStructure ? " -> Top-level unit" : "")); }
+                GDSData.Structures.Add(Str.Name, Str);
+            }
         }
 
         /// <summary> Used while parsing the file. Keeps the incomplete structure that data is being read about currently. </summary>
@@ -58,7 +63,7 @@ namespace GDStoSVG
             {
                 case RecordType.HEADER:
                     if (data == null || data.Length < 2) { throw new InvalidDataException("Header had insufficient data"); }
-                    Console.WriteLine(string.Format("File version is 0x{0:X2}{1:X2}", data[0], data[1]));
+                    if(Program.Info) { Console.WriteLine(string.Format("File version is 0x{0:X2}{1:X2}", data[0], data[1])); }
                     break;
                 case RecordType.BGNLIB:
                     // TODO: Read last modified/accessed times
@@ -98,7 +103,7 @@ namespace GDStoSVG
                     if (this.CurrentStructure == null) { throw new InvalidDataException("Structure name found outside of a structure."); }
                     if (data == null || data.Length == 0) { throw new InvalidDataException("Structure name had no data"); }
                     this.CurrentStructure.Name = ParseString(data, 0, data.Length);
-                    Console.WriteLine("Reading structure \"{0}\"", this.CurrentStructure.Name);
+                    if (Program.Debug) { Console.WriteLine("Reading structure \"{0}\"", this.CurrentStructure.Name); }
                     break;
                 case RecordType.STRCLASS: // optional
                     break;

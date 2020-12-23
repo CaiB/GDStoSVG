@@ -33,7 +33,7 @@ namespace GDStoSVG
             {
                 string LayerName = "[NOT ASSIGNED]";
                 if (LayerConfig.Layers.ContainsKey(Layer)) { LayerName = LayerConfig.Layers[Layer].Name; }
-                Console.WriteLine("> " + Layer + " -> " + LayerName);
+                Console.WriteLine("  Layer " + Layer + " -> " + LayerName);
             }
         }
     }
