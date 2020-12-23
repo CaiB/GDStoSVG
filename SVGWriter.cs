@@ -48,7 +48,7 @@ namespace GDStoSVG
                 WriteElement(Element);
             }
 
-            this.Writer.WriteLine("<svg viewBox=\"{0} {1} {2} {3}\" version=\"1.1\">", this.MinX, -this.MaxY, this.MaxX - this.MinX, this.MaxY - this.MinY);
+            this.Writer.WriteLine("<svg viewBox=\"{0} {1} {2} {3}\" version=\"1.1\">", this.MinX, -this.MaxY, (this.MaxX - this.MinX), (this.MaxY - this.MinY));
 
             List<Layer> LayersSorted = LayerConfig.Layers.Values.OrderBy(x => x.SortOrder).ToList();
             foreach(Layer Layer in LayersSorted)
@@ -166,10 +166,32 @@ namespace GDStoSVG
 
         }
 
-        public void WriteText(Text text, Transform trans) // TODO add text support
+        public void WriteText(Text text, Transform trans) // TODO: Add font support
         {
-            // if (!this.Output.ContainsKey((short)text.Layer!)) { this.Output.Add((short)text.Layer, new List<string>()); }
-            Console.WriteLine("Text output :(");
+            if (!text.Check()) { Console.WriteLine("Skipping invalid text"); return; } // Layer, Coords are non-null after
+            if (text.Coords!.Length < 1) { Console.WriteLine("Skipping text with no location."); return; }
+            if (!this.Output.ContainsKey((short)text.Layer!)) { this.Output.Add((short)text.Layer, new List<string>()); }
+
+            double X = text.Coords[0].Item1;
+            double Y = trans.YReflect ? -text.Coords[0].Item2 : text.Coords[0].Item2;
+            X = (X * Math.Cos(trans.Angle / 180 * Math.PI)) - (Y * Math.Sin(trans.Angle / 180 * Math.PI));
+            Y = (Y * Math.Cos(trans.Angle / 180 * Math.PI)) + (X * Math.Sin(trans.Angle / 180 * Math.PI));
+            X += trans.PositionOffset.Item1;
+            Y += trans.PositionOffset.Item2;
+            UpdateExtents(X, Y);
+
+            Layer Layer = GetLayer((short)text.Layer);
+            string Align = "start";
+            if (text.HorizontalPresentation == Text.HorizontalAlign.CENTER) { Align = "middle"; }
+            else if (text.HorizontalPresentation == Text.HorizontalAlign.RIGHT) { Align = "end"; }
+            string Base = "auto";
+            if (text.VerticalPresentation == Text.VerticalAlign.MIDDLE) { Base = "middle"; }
+            else if (text.VerticalPresentation == Text.VerticalAlign.TOP) { Base = "hanging"; }
+            // TODO: Deal with font size, Virtuoso seems to output no data?
+            string Out = string.Format("<text x=\"{0}\" y=\"{1}\" text-anchor=\"{2}\" dominant-baseline=\"{3}\" color=\"#{4:X6}\" font-size=\"{5}\">", X, -Y, Align, Base, Layer.Colour, 100);// (text.Width < 0 ? -text.Width : text.Width * trans.Magnification));
+            Out += text.String;
+            Out += "</text>";
+            this.Output[(short)text.Layer].Add(Out);
         }
 
         public void WriteNode(Node node, Transform trans)
