@@ -189,7 +189,9 @@ namespace GDStoSVG
             else if (text.VerticalPresentation == Text.VerticalAlign.TOP) { Base = "hanging"; }
             // TODO: Deal with font size, Virtuoso seems to output no data?
             string Out = string.Format("<text x=\"{0}\" y=\"{1}\" text-anchor=\"{2}\" dominant-baseline=\"{3}\" color=\"#{4:X6}\" font-size=\"{5}\">", X, -Y, Align, Base, Layer.Colour, 100);// (text.Width < 0 ? -text.Width : text.Width * trans.Magnification));
-            Out += text.String;
+            string TextEsc = text.String ?? "";
+            TextEsc = TextEsc.Replace("&", "&amp;").Replace("\"", "&quot;").Replace("'", "&apos;").Replace("<", "&lt;").Replace(">", "&gt;");
+            Out += TextEsc;
             Out += "</text>";
             this.Output[(short)text.Layer].Add(Out);
         }
