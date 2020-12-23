@@ -72,11 +72,15 @@ namespace GDStoSVG
             this.Writer.Write(@"<polygon points=""");
             for(int i = 0; i < bound.Coords.Length - 1; i++) // Last element = first, so we don't write the last one.
             {
-                this.Writer.Write("{0},{1}", trans.XReflect ? -(bound.Coords[i].Item1 + trans.PositionOffset.Item1) : (bound.Coords[i].Item1 + trans.PositionOffset.Item1), -(bound.Coords[i].Item2 + trans.PositionOffset.Item2));
-                if (i != bound.Coords.Length - 1) { this.Writer.Write(' '); }
+                double X = bound.Coords[i].Item1 + trans.PositionOffset.Item1;
+                double Y = trans.PositionOffset.Item2 + (trans.YReflect ? -bound.Coords[i].Item2 : bound.Coords[i].Item2);
+                X = (X * Math.Cos(trans.Angle / 180 * Math.PI)) - (Y * Math.Sin(trans.Angle / 180 * Math.PI));
+                Y = (Y * Math.Cos(trans.Angle / 180 * Math.PI)) + (X * Math.Sin(trans.Angle / 180 * Math.PI));
+                this.Writer.Write("{0},{1}", X, -Y); // SVG has inverted Y
+                if (i != bound.Coords.Length - 2) { this.Writer.Write(' '); }
             }
             Layer Layer = GetLayer((short)bound.Layer!);
-            this.Writer.Write(@""" fill=""#" + Layer.Colour.ToString("X6") + @""" opacity=""" + Layer.Opacity + @""" />");
+            this.Writer.WriteLine(@""" fill=""#" + Layer.Colour.ToString("X6") + @""" opacity=""" + Layer.Opacity + @""" />");
         }
 
         public void WritePath(Path path, Transform trans)
@@ -86,7 +90,11 @@ namespace GDStoSVG
             this.Writer.Write(@"<polyline points=""");
             for(int i = 0; i < path.Coords.Length; i++)
             {
-                this.Writer.Write("{0},{1}", trans.XReflect ? -(path.Coords[i].Item1 + trans.PositionOffset.Item1) : (path.Coords[i].Item1 + trans.PositionOffset.Item1), -(path.Coords[i].Item2 + trans.PositionOffset.Item2));
+                double X = path.Coords[i].Item1 + trans.PositionOffset.Item1;
+                double Y = trans.PositionOffset.Item2 + (trans.YReflect ? -path.Coords[i].Item2 : path.Coords[i].Item2);
+                X = (X * Math.Cos(trans.Angle / 180 * Math.PI)) - (Y * Math.Sin(trans.Angle / 180 * Math.PI));
+                Y = (Y * Math.Cos(trans.Angle / 180 * Math.PI)) + (X * Math.Sin(trans.Angle / 180 * Math.PI));
+                this.Writer.Write("{0},{1}", X, -Y); // SVG has inverted Y
                 if (i != path.Coords.Length - 1) { this.Writer.Write(' '); }
             }
 
@@ -97,7 +105,7 @@ namespace GDStoSVG
             string Colour = Layer.Colour.ToString("X6");
             double Width = path.Width < 0 ? -path.Width : path.Width * trans.Magnification;
 
-            this.Writer.Write(@""" stroke=""#" + Colour + @""" stroke-width=""" + Width + @""" opacity=""" + Layer.Opacity + @""" stroke-linecap=""" + EndcapType + @""" />");
+            this.Writer.WriteLine(@""" stroke=""#" + Colour + @""" stroke-width=""" + Width + @""" opacity=""" + Layer.Opacity + @""" stroke-linecap=""" + EndcapType + @""" />");
         }
 
         public void WriteStructRef(StructureRef structRef, Transform trans)

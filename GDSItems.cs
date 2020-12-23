@@ -90,7 +90,8 @@ namespace GDStoSVG
 
     public class Transform
     {
-        public bool XReflect = false;
+        /// <summary> Reflection about the X axis (Y values affected). </summary>
+        public bool YReflect = false;
         public bool MagnificationAbsolute = false;
         public bool AngleAbsolute = false;
         public double Magnification = 1.0D;
@@ -107,7 +108,7 @@ namespace GDStoSVG
         {
             return new Transform
             {
-                XReflect = trans.XReflect ^ this.XReflect,
+                YReflect = trans.YReflect ^ this.YReflect,
                 MagnificationAbsolute = trans.MagnificationAbsolute | this.MagnificationAbsolute,
                 AngleAbsolute = trans.AngleAbsolute | this.AngleAbsolute,
                 Magnification = trans.Magnification * this.Magnification,

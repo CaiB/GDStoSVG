@@ -217,19 +217,19 @@ namespace GDStoSVG
                     bool AbsAng = (TransformData & 0x0002) == 0x0002;
                     if (this.CurrentElement is StructureRef SRef)
                     {
-                        SRef.Transform.XReflect = Reflect;
+                        SRef.Transform.YReflect = Reflect;
                         SRef.Transform.MagnificationAbsolute = AbsMag;
                         SRef.Transform.AngleAbsolute = AbsAng;
                     }
                     else if (this.CurrentElement is ArrayRef ARef)
                     {
-                        ARef.Transform.XReflect = Reflect;
+                        ARef.Transform.YReflect = Reflect;
                         ARef.Transform.MagnificationAbsolute = AbsMag;
                         ARef.Transform.AngleAbsolute = AbsAng;
                     }
                     else if (this.CurrentElement is Text Txt)
                     {
-                        Txt.Transform.XReflect = Reflect;
+                        Txt.Transform.YReflect = Reflect;
                         Txt.Transform.MagnificationAbsolute = AbsMag;
                         Txt.Transform.AngleAbsolute = AbsAng;
                     }
@@ -248,6 +248,8 @@ namespace GDStoSVG
                     if (this.CurrentElement == null) { throw new InvalidDataException("Trying to assign angle with no element."); }
                     if (data == null || data.Length < 8) { throw new InvalidDataException("Element angle had insufficient data"); }
                     double Angle = ParseDouble(data, 0);
+                    if (Angle > 0.01 || Angle < -0.01)
+                    { Console.WriteLine("wow"); }
                     if (this.CurrentElement is StructureRef StRef2) { StRef2.Transform.Angle = Angle; }
                     else if (this.CurrentElement is ArrayRef ArRef2) { ArRef2.Transform.Angle = Angle; }
                     else if (this.CurrentElement is Text Txt3) { Txt3.Transform.Angle = Angle; }
