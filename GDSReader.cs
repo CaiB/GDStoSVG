@@ -248,8 +248,6 @@ namespace GDStoSVG
                     if (this.CurrentElement == null) { throw new InvalidDataException("Trying to assign angle with no element."); }
                     if (data == null || data.Length < 8) { throw new InvalidDataException("Element angle had insufficient data"); }
                     double Angle = ParseDouble(data, 0);
-                    if (Angle > 0.01 || Angle < -0.01)
-                    { Console.WriteLine("wow"); }
                     if (this.CurrentElement is StructureRef StRef2) { StRef2.Transform.Angle = Angle; }
                     else if (this.CurrentElement is ArrayRef ArRef2) { ArRef2.Transform.Angle = Angle; }
                     else if (this.CurrentElement is Text Txt3) { Txt3.Transform.Angle = Angle; }
@@ -381,15 +379,15 @@ namespace GDStoSVG
             byte[] DoubleData = new byte[8];
             Array.Copy(data, position, DoubleData, 0, 8);
             if (this.IsLE) { Array.Reverse(DoubleData); }
-            bool Negative = (DoubleData[0] >> 7) == 1;
-            byte Exponent = (byte)(DoubleData[0] & 0b0111_1111);
-            ulong Mantissa = ((ulong)DoubleData[1] << 48) |
-                             ((ulong)DoubleData[2] << 40) |
-                             ((ulong)DoubleData[3] << 32) |
-                             ((ulong)DoubleData[4] << 24) |
-                             ((ulong)DoubleData[5] << 16) |
-                             ((ulong)DoubleData[6] << 8) |
-                             DoubleData[7];
+            bool Negative = (DoubleData[7] >> 7) == 1;
+            byte Exponent = (byte)(DoubleData[7] & 0b0111_1111);
+            ulong Mantissa = ((ulong)DoubleData[6] << 48) |
+                             ((ulong)DoubleData[5] << 40) |
+                             ((ulong)DoubleData[4] << 32) |
+                             ((ulong)DoubleData[3] << 24) |
+                             ((ulong)DoubleData[2] << 16) |
+                             ((ulong)DoubleData[1] << 8) |
+                             DoubleData[0];
             double Value = ((double)Mantissa / (1UL << 56)) * Math.Pow(16, Exponent - 64);
             return Negative ? -Value : Value;
         }
@@ -425,6 +423,7 @@ namespace GDStoSVG
         private bool TestDoubleParse(ulong data, double expected)
         {
             byte[] ByteData = BitConverter.GetBytes(data);
+            Array.Reverse(ByteData); // Simulate file formatting.
             double Result = ParseDouble(ByteData, 0);
             bool Success = Math.Abs(Result - expected) <= Math.Abs(Result) / 10000F;
             Console.ForegroundColor = Success ? ConsoleColor.Green : ConsoleColor.Red;

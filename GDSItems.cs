@@ -106,6 +106,8 @@ namespace GDStoSVG
         /// <returns> The new transform, with both sets of transformations applied. </returns>
         public Transform ApplyParent(Transform trans)
         {
+            int NewX = trans.PositionOffset.Item1 + this.PositionOffset.Item1;
+            int NewY = trans.PositionOffset.Item2 + (trans.YReflect ? -this.PositionOffset.Item2 : this.PositionOffset.Item2);
             return new Transform
             {
                 YReflect = trans.YReflect ^ this.YReflect,
@@ -113,7 +115,7 @@ namespace GDStoSVG
                 AngleAbsolute = trans.AngleAbsolute | this.AngleAbsolute,
                 Magnification = trans.Magnification * this.Magnification,
                 Angle = trans.Angle + this.Angle,
-                PositionOffset = new Tuple<int, int>(trans.PositionOffset.Item1 + this.PositionOffset.Item1, trans.PositionOffset.Item2 + this.PositionOffset.Item2)
+                PositionOffset = new Tuple<int, int>(NewX, NewY)
             };
         }
     }

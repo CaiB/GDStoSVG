@@ -14,7 +14,7 @@ namespace GDStoSVG
             GDSData.ScanLayers();
             string SVGFile = "RF_MUX_v1.svg";
             SVGWriter SVG = new SVGWriter(SVGFile);
-            SVG.WriteRoot(GDSData.Structures["RF_MUX"]);
+            SVG.WriteRoot(GDSData.Structures["RF"]);
             SVG.Finish();
             //GDS.TestDoubleParse();
 

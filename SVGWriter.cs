@@ -72,10 +72,12 @@ namespace GDStoSVG
             this.Writer.Write(@"<polygon points=""");
             for(int i = 0; i < bound.Coords.Length - 1; i++) // Last element = first, so we don't write the last one.
             {
-                double X = bound.Coords[i].Item1 + trans.PositionOffset.Item1;
-                double Y = trans.PositionOffset.Item2 + (trans.YReflect ? -bound.Coords[i].Item2 : bound.Coords[i].Item2);
+                double X = bound.Coords[i].Item1;
+                double Y = trans.YReflect ? -bound.Coords[i].Item2 : bound.Coords[i].Item2;
                 X = (X * Math.Cos(trans.Angle / 180 * Math.PI)) - (Y * Math.Sin(trans.Angle / 180 * Math.PI));
                 Y = (Y * Math.Cos(trans.Angle / 180 * Math.PI)) + (X * Math.Sin(trans.Angle / 180 * Math.PI));
+                X += trans.PositionOffset.Item1;
+                Y += trans.PositionOffset.Item2;
                 this.Writer.Write("{0},{1}", X, -Y); // SVG has inverted Y
                 if (i != bound.Coords.Length - 2) { this.Writer.Write(' '); }
             }
@@ -90,10 +92,12 @@ namespace GDStoSVG
             this.Writer.Write(@"<polyline points=""");
             for(int i = 0; i < path.Coords.Length; i++)
             {
-                double X = path.Coords[i].Item1 + trans.PositionOffset.Item1;
-                double Y = trans.PositionOffset.Item2 + (trans.YReflect ? -path.Coords[i].Item2 : path.Coords[i].Item2);
+                double X = path.Coords[i].Item1;
+                double Y = trans.YReflect ? -path.Coords[i].Item2 : path.Coords[i].Item2;
                 X = (X * Math.Cos(trans.Angle / 180 * Math.PI)) - (Y * Math.Sin(trans.Angle / 180 * Math.PI));
                 Y = (Y * Math.Cos(trans.Angle / 180 * Math.PI)) + (X * Math.Sin(trans.Angle / 180 * Math.PI));
+                X += trans.PositionOffset.Item1;
+                Y += trans.PositionOffset.Item2;
                 this.Writer.Write("{0},{1}", X, -Y); // SVG has inverted Y
                 if (i != path.Coords.Length - 1) { this.Writer.Write(' '); }
             }
@@ -114,7 +118,9 @@ namespace GDStoSVG
             Structure Struct = GDSData.Structures[structRef.StructureName!];
             structRef.Transform.PositionOffset = structRef.Coords![0];
             Transform NewTrans = structRef.Transform.ApplyParent(trans);
+            this.Writer.WriteLine("<!-- Begin Structure " + structRef.StructureName + " -->");
             WriteRoot(Struct, NewTrans);
+            this.Writer.WriteLine("<!-- End Structure " + structRef.StructureName + " -->");
         }
 
         public void WriteArrayRef(ArrayRef arrayRef, Transform trans)
@@ -139,8 +145,14 @@ namespace GDStoSVG
             this.Writer.Write(@"<polygon points=""");
             for (int i = 0; i < box.Coords.Length - 1; i++) // Last element = first, so we don't write the last one.
             {
-                this.Writer.Write("{0},{1}", box.Coords[i].Item1, -box.Coords[i].Item2);
-                if (i != box.Coords.Length - 1) { this.Writer.Write(' '); }
+                double X = box.Coords[i].Item1;
+                double Y = trans.YReflect ? -box.Coords[i].Item2 : box.Coords[i].Item2;
+                X = (X * Math.Cos(trans.Angle / 180 * Math.PI)) - (Y * Math.Sin(trans.Angle / 180 * Math.PI));
+                Y = (Y * Math.Cos(trans.Angle / 180 * Math.PI)) + (X * Math.Sin(trans.Angle / 180 * Math.PI));
+                X += trans.PositionOffset.Item1;
+                Y += trans.PositionOffset.Item2;
+                this.Writer.Write("{0},{1}", X, -Y); // SVG has inverted Y
+                if (i != box.Coords.Length - 2) { this.Writer.Write(' '); }
             }
             Layer Layer = GetLayer((short)box.Layer!);
             this.Writer.Write(@""" fill=""#" + Layer.Colour.ToString("X6") + @""" opacity=""" + Layer.Opacity + @""" />");
