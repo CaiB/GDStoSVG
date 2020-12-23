@@ -16,6 +16,7 @@ namespace GDStoSVG
             SVGWriter SVG = new SVGWriter(SVGFile);
             SVG.WriteRoot(GDSData.Structures["REG4"]);
             SVG.Finish();
+            //GDS.TestDoubleParse();
 
             // Expected parameters
             // CSV file, GDS file, SVG file, layer detect mode switch

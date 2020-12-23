@@ -217,21 +217,21 @@ namespace GDStoSVG
                     bool AbsAng = (TransformData & 0x0002) == 0x0002;
                     if (this.CurrentElement is StructureRef SRef)
                     {
-                        SRef.XReflect = Reflect;
-                        SRef.MagnificationAbsolute = AbsMag;
-                        SRef.AngleAbsolute = AbsAng;
+                        SRef.Transform.XReflect = Reflect;
+                        SRef.Transform.MagnificationAbsolute = AbsMag;
+                        SRef.Transform.AngleAbsolute = AbsAng;
                     }
                     else if (this.CurrentElement is ArrayRef ARef)
                     {
-                        ARef.XReflect = Reflect;
-                        ARef.MagnificationAbsolute = AbsMag;
-                        ARef.AngleAbsolute = AbsAng;
+                        ARef.Transform.XReflect = Reflect;
+                        ARef.Transform.MagnificationAbsolute = AbsMag;
+                        ARef.Transform.AngleAbsolute = AbsAng;
                     }
                     else if (this.CurrentElement is Text Txt)
                     {
-                        Txt.XReflect = Reflect;
-                        Txt.MagnificationAbsolute = AbsMag;
-                        Txt.AngleAbsolute = AbsAng;
+                        Txt.Transform.XReflect = Reflect;
+                        Txt.Transform.MagnificationAbsolute = AbsMag;
+                        Txt.Transform.AngleAbsolute = AbsAng;
                     }
                     else { throw new InvalidOperationException("Tried to assign structure transform properties to non-reference element."); }
                     break;
@@ -239,18 +239,18 @@ namespace GDStoSVG
                     if (this.CurrentElement == null) { throw new InvalidDataException("Trying to assign magnification with no element."); }
                     if (data == null || data.Length < 8) { throw new InvalidDataException("Element magnification had insufficient data"); }
                     double Mag = ParseDouble(data, 0);
-                    if (this.CurrentElement is StructureRef StRef) { StRef.Magnification = Mag; }
-                    else if (this.CurrentElement is ArrayRef ArRef) { ArRef.Magnification = Mag; }
-                    else if (this.CurrentElement is Text Txt2) { Txt2.Magnification = Mag; }
+                    if (this.CurrentElement is StructureRef StRef) { StRef.Transform.Magnification = Mag; }
+                    else if (this.CurrentElement is ArrayRef ArRef) { ArRef.Transform.Magnification = Mag; }
+                    else if (this.CurrentElement is Text Txt2) { Txt2.Transform.Magnification = Mag; }
                     else { throw new InvalidOperationException("Tried to assign magnification to element that cannot take magnification parameter."); }
                     break;
                 case RecordType.ANGLE:
                     if (this.CurrentElement == null) { throw new InvalidDataException("Trying to assign angle with no element."); }
                     if (data == null || data.Length < 8) { throw new InvalidDataException("Element angle had insufficient data"); }
                     double Angle = ParseDouble(data, 0);
-                    if (this.CurrentElement is StructureRef StRef2) { StRef2.Angle = Angle; }
-                    else if (this.CurrentElement is ArrayRef ArRef2) { ArRef2.Angle = Angle; }
-                    else if (this.CurrentElement is Text Txt3) { Txt3.Angle = Angle; }
+                    if (this.CurrentElement is StructureRef StRef2) { StRef2.Transform.Angle = Angle; }
+                    else if (this.CurrentElement is ArrayRef ArRef2) { ArRef2.Transform.Angle = Angle; }
+                    else if (this.CurrentElement is Text Txt3) { Txt3.Transform.Angle = Angle; }
                     else { throw new InvalidOperationException("Tried to assign angle to element that cannot take angle parameter."); }
                     break;
                 case RecordType.COLROW:
@@ -379,7 +379,56 @@ namespace GDStoSVG
             byte[] DoubleData = new byte[8];
             Array.Copy(data, position, DoubleData, 0, 8);
             if (this.IsLE) { Array.Reverse(DoubleData); }
-            return BitConverter.ToDouble(DoubleData);
+            bool Negative = (DoubleData[0] >> 7) == 1;
+            byte Exponent = (byte)(DoubleData[0] & 0b0111_1111);
+            ulong Mantissa = ((ulong)DoubleData[1] << 48) |
+                             ((ulong)DoubleData[2] << 40) |
+                             ((ulong)DoubleData[3] << 32) |
+                             ((ulong)DoubleData[4] << 24) |
+                             ((ulong)DoubleData[5] << 16) |
+                             ((ulong)DoubleData[6] << 8) |
+                             DoubleData[7];
+            double Value = ((double)Mantissa / (1UL << 56)) * Math.Pow(16, Exponent - 64);
+            return Negative ? -Value : Value;
+        }
+
+        /// <summary> Checks a standard set of 8B values to see if the <see cref="double"/> parsing is working correctly. </summary>
+        public void TestDoubleParse()
+        {
+            Console.WriteLine("Testing double parsing:");
+            TestDoubleParse(0b01000001_00010000_00000000_00000000_00000000_00000000_00000000_00000000, 1D);
+            TestDoubleParse(0b01000001_00100000_00000000_00000000_00000000_00000000_00000000_00000000, 2D);
+            TestDoubleParse(0b01000001_00110000_00000000_00000000_00000000_00000000_00000000_00000000, 3D);
+            TestDoubleParse(0b11000001_00010000_00000000_00000000_00000000_00000000_00000000_00000000, -1D);
+            TestDoubleParse(0b11000001_00100000_00000000_00000000_00000000_00000000_00000000_00000000, -2D);
+            TestDoubleParse(0b11000001_00110000_00000000_00000000_00000000_00000000_00000000_00000000, -3D);
+            TestDoubleParse(0b01000000_10000000_00000000_00000000_00000000_00000000_00000000_00000000, 0.5D);
+            TestDoubleParse(0b01000000_10011001_10011001_10011001_10011001_10011001_10011001_10011001, 0.6D);
+            TestDoubleParse(0b01000000_10110011_00110011_00110011_00110011_00110011_00110011_00110011, 0.7D);
+            TestDoubleParse(0b01000001_00011000_00000000_00000000_00000000_00000000_00000000_00000000, 1.5D);
+            TestDoubleParse(0b01000001_00011001_10011001_10011001_10011001_10011001_10011001_10011001, 1.6D);
+            TestDoubleParse(0b01000001_00011011_00110011_00110011_00110011_00110011_00110011_00110011, 1.7D);
+            TestDoubleParse(0b00000000_00000000_00000000_00000000_00000000_00000000_00000000_00000000, 0D);
+            TestDoubleParse(0b01000001_10100000_00000000_00000000_00000000_00000000_00000000_00000000, 10D);
+            TestDoubleParse(0b01000010_01100100_00000000_00000000_00000000_00000000_00000000_00000000, 100D);
+            TestDoubleParse(0b01000011_00111110_10000000_00000000_00000000_00000000_00000000_00000000, 1_000D);
+            TestDoubleParse(0b01000100_00100111_00010000_00000000_00000000_00000000_00000000_00000000, 10_000D);
+            TestDoubleParse(0b01000101_00011000_01101010_00000000_00000000_00000000_00000000_00000000, 100_000D);
+        }
+
+        /// <summary> Converts a single input to <see cref="double"/> representation, and compares it against expected output. </summary>
+        /// <param name="data"> The input data to try converting. </param>
+        /// <param name="expected"> The expected output data. </param>
+        /// <returns> Whether the result was within tolerance. </returns>
+        private bool TestDoubleParse(ulong data, double expected)
+        {
+            byte[] ByteData = BitConverter.GetBytes(data);
+            double Result = ParseDouble(ByteData, 0);
+            bool Success = Math.Abs(Result - expected) <= Math.Abs(Result) / 10000F;
+            Console.ForegroundColor = Success ? ConsoleColor.Green : ConsoleColor.Red;
+            Console.WriteLine("Input: 0x{0:X16}, calculated {1}, expected {2} -> Pass: {3}", data, Result, expected, Success);
+            Console.ResetColor();
+            return Success;
         }
 
         /// <summary> List of the different kinds of records that can be found in the GDS file. </summary>

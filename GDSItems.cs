@@ -32,7 +32,7 @@ namespace GDStoSVG
         public short? Layer = null;
         public short? Datatype = null;
         public short PathType = 0;
-        public int Width = 0;
+        public int Width = 0; // negative means not affected by magnification
 
         public override bool Check() => this.Layer != null && this.Datatype != null && this.Coords != null;
     }
@@ -40,11 +40,7 @@ namespace GDStoSVG
     public class StructureRef : Element
     {
         public string? StructureName = null;
-        public bool XReflect = false;
-        public bool MagnificationAbsolute = false;
-        public bool AngleAbsolute = false;
-        public double Magnification = 1.0D;
-        public double Angle = 0.0D; // degrees, counterclockwise
+        public Transform Transform = new Transform();
 
         public override bool Check() => this.StructureName != null && this.Coords != null;
     }
@@ -52,11 +48,7 @@ namespace GDStoSVG
     public class ArrayRef : Element
     {
         public string? StructureName = null;
-        public bool XReflect = false;
-        public bool MagnificationAbsolute = false;
-        public bool AngleAbsolute = false;
-        public double Magnification = 1.0D;
-        public double Angle = 0.0D; // degrees, counterclockwise
+        public Transform Transform = new Transform();
         public Tuple<short, short>? RepeatCount;
 
         public override bool Check() => this.StructureName != null && this.Coords != null && this.RepeatCount != null;
@@ -65,12 +57,8 @@ namespace GDStoSVG
     public class Text : Element
     {
         public short? Layer = null;
-        public int Width = 0;
-        public bool XReflect = false;
-        public bool MagnificationAbsolute = false;
-        public bool AngleAbsolute = false;
-        public double Magnification = 1.0D;
-        public double Angle = 0.0D; // degrees, counterclockwise
+        public int Width = 0; // negative means not affected by magnification
+        public Transform Transform = new Transform();
         public short? TextType = null;
         public byte Font = 0;
         public VerticalAlign VerticalPresentation = VerticalAlign.TOP;
@@ -98,5 +86,34 @@ namespace GDStoSVG
         public short? BoxType = null;
 
         public override bool Check() => this.Layer != null && this.BoxType != null && this.Coords != null;
+    }
+
+    public class Transform
+    {
+        public bool XReflect = false;
+        public bool MagnificationAbsolute = false;
+        public bool AngleAbsolute = false;
+        public double Magnification = 1.0D;
+        public double Angle = 0.0D; // degrees, counterclockwise
+
+        public Tuple<int, int> PositionOffset = new Tuple<int, int>(0, 0);
+
+        public static readonly Transform Default = new Transform();
+
+        /// <summary> Applies a transform from a parent element onto this one to produce a compound transform. </summary>
+        /// <param name="trans"> The parent element's transform. </param>
+        /// <returns> The new transform, with both sets of transformations applied. </returns>
+        public Transform ApplyParent(Transform trans)
+        {
+            return new Transform
+            {
+                XReflect = trans.XReflect ^ this.XReflect,
+                MagnificationAbsolute = trans.MagnificationAbsolute | this.MagnificationAbsolute,
+                AngleAbsolute = trans.AngleAbsolute | this.AngleAbsolute,
+                Magnification = trans.Magnification * this.Magnification,
+                Angle = trans.Angle + this.Angle,
+                PositionOffset = new Tuple<int, int>(trans.PositionOffset.Item1 + this.PositionOffset.Item1, trans.PositionOffset.Item2 + this.PositionOffset.Item2)
+            };
+        }
     }
 }

@@ -37,74 +37,94 @@ namespace GDStoSVG
             }
         }
 
+        public void WriteRoot(Structure structure, Transform trans)
+        {
+            if (structure.Elements == null) { return; } // No child elements, output nothing.
+            foreach (Element Element in structure.Elements)
+            {
+                WriteElement(Element, trans);
+            }
+        }
+
         /// <summary> Writes an element, as well as all referenced elements if it is a reference-type element. </summary>
         /// <param name="element"> The element to write to SVG. </param>
-        public void WriteElement(Element element)
+        /// <param name="trans"> The transform to apply to the element, null if default should be used. </param>
+        public void WriteElement(Element element, Transform? trans = null)
         {
+            if (trans == null) { trans = Transform.Default; }
             switch(element)
             {
-                case Boundary Boundary: WriteBoundary(Boundary); break;
-                case Path Path: WritePath(Path); break;
-                case StructureRef StructRef: WriteStructRef(StructRef); break;
-                case ArrayRef ArrayRef: WriteArrayRef(ArrayRef); break;
-                case Text Text: WriteText(Text); break;
-                case Node Node: WriteNode(Node); break;
-                case Box Box: WriteBox(Box); break;
+                case Boundary Boundary: WriteBoundary(Boundary, trans); break;
+                case Path Path: WritePath(Path, trans); break;
+                case StructureRef StructRef: WriteStructRef(StructRef, trans); break;
+                case ArrayRef ArrayRef: WriteArrayRef(ArrayRef, trans); break;
+                case Text Text: WriteText(Text, trans); break;
+                case Node Node: WriteNode(Node, trans); break;
+                case Box Box: WriteBox(Box, trans); break;
                 default: Console.WriteLine("Unknown element type, not writing to SVG: " + element); break;
             }
         }
 
-        public void WriteBoundary(Boundary bound)
+        public void WriteBoundary(Boundary bound, Transform trans)
         {
             if (!bound.Check()) { Console.WriteLine("Skipping invalid boundary"); return; } // Layer, Coords are non-null after
             if (bound.Coords!.Length < 3) { Console.WriteLine("Skipping boundary with less than 3 points."); return; }
             this.Writer.Write(@"<polygon points=""");
             for(int i = 0; i < bound.Coords.Length - 1; i++) // Last element = first, so we don't write the last one.
             {
-                this.Writer.Write("{0},{1}", bound.Coords[i].Item1, -bound.Coords[i].Item2);
+                this.Writer.Write("{0},{1}", trans.XReflect ? -(bound.Coords[i].Item1 + trans.PositionOffset.Item1) : (bound.Coords[i].Item1 + trans.PositionOffset.Item1), -(bound.Coords[i].Item2 + trans.PositionOffset.Item2));
                 if (i != bound.Coords.Length - 1) { this.Writer.Write(' '); }
             }
             Layer Layer = GetLayer((short)bound.Layer!);
             this.Writer.Write(@""" fill=""#" + Layer.Colour.ToString("X6") + @""" opacity=""" + Layer.Opacity + @""" />");
         }
 
-        public void WritePath(Path path) // TODO: Support non-0-mode paths
+        public void WritePath(Path path, Transform trans)
         {
             if (!path.Check()) { Console.WriteLine("Skipping invalid path"); return; } // Layer, Coords are non-null after
             if (path.Coords!.Length < 2) { Console.WriteLine("Skipping path with less than 2 points."); return; }
             this.Writer.Write(@"<polyline points=""");
             for(int i = 0; i < path.Coords.Length; i++)
             {
-                this.Writer.Write("{0},{1}", path.Coords[i].Item1, -path.Coords[i].Item2);
+                this.Writer.Write("{0},{1}", trans.XReflect ? -(path.Coords[i].Item1 + trans.PositionOffset.Item1) : (path.Coords[i].Item1 + trans.PositionOffset.Item1), -(path.Coords[i].Item2 + trans.PositionOffset.Item2));
                 if (i != path.Coords.Length - 1) { this.Writer.Write(' '); }
             }
+
+            string EndcapType = "butt"; // Doesn't support type 4.
+            if (path.PathType == 1) { EndcapType = "round"; }
+            if (path.PathType == 2) { EndcapType = "square"; }
             Layer Layer = GetLayer((short)path.Layer!);
-            this.Writer.Write(@""" stroke=""#" + Layer.Colour.ToString("X6") + @""" stroke-width=""" + path.Width + @""" opacity=""" + Layer.Opacity + @""" />");
+            string Colour = Layer.Colour.ToString("X6");
+            double Width = path.Width < 0 ? -path.Width : path.Width * trans.Magnification;
+
+            this.Writer.Write(@""" stroke=""#" + Colour + @""" stroke-width=""" + Width + @""" opacity=""" + Layer.Opacity + @""" stroke-linecap=""" + EndcapType + @""" />");
         }
 
-        public void WriteStructRef(StructureRef structRef)
+        public void WriteStructRef(StructureRef structRef, Transform trans)
         {
             if (!structRef.Check()) { Console.WriteLine("Skipping invalid structure reference"); return; } // StructureName, Coords are non-null after
             Structure Struct = GDSData.Structures[structRef.StructureName!];
-            WriteRoot(Struct);
+            structRef.Transform.PositionOffset = structRef.Coords![0];
+            Transform NewTrans = structRef.Transform.ApplyParent(trans);
+            WriteRoot(Struct, NewTrans);
         }
 
-        public void WriteArrayRef(ArrayRef arrayRef)
+        public void WriteArrayRef(ArrayRef arrayRef, Transform trans)
         {
 
         }
 
-        public void WriteText(Text text)
+        public void WriteText(Text text, Transform trans)
         {
 
         }
 
-        public void WriteNode(Node node)
+        public void WriteNode(Node node, Transform trans)
         {
 
         }
 
-        public void WriteBox(Box box)
+        public void WriteBox(Box box, Transform trans)
         {
             if (!box.Check()) { Console.WriteLine("Skipping invalid box"); return; } // Layer, Coords are non-null after
             if (box.Coords!.Length != 5) { Console.WriteLine("Skipping box with point count that is not 5."); return; }
