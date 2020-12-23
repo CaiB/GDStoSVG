@@ -20,9 +20,18 @@ namespace GDStoSVG
             {
                 string? Line = Reader.ReadLine();
                 Regex CSVParse = new Regex(",(?=(?:[^\"]*\"[^\"]*\")*(?![^\"]*\"))");
+                int LineNum = 1;
                 while (Line != null)
                 {
                     string[] Parts = CSVParse.Split(Line);
+                    if (Parts.Length < 4)
+                    {
+                        Console.WriteLine("Missing data in CSV file on line " + LineNum);
+                        Line = Reader.ReadLine();
+                        LineNum++;
+                        continue;
+                    }
+
                     Layer Layer = new Layer
                     {
                         Name = Parts[0],
@@ -32,6 +41,7 @@ namespace GDStoSVG
                     };
                     LayerList.Add(Layer);
                     Line = Reader.ReadLine();
+                    LineNum++;
                 }
             }
             foreach (Layer Layer in LayerList) { Layers.Add(Layer.ID, Layer); }
@@ -52,5 +62,8 @@ namespace GDStoSVG
 
         /// <summary> The opacity to assign the objects in the SVG file. </summary>
         public float Opacity { get; set; }
+
+        /// <summary> Determines the order in which the layers appear in the SVG output. </summary>
+        public int SortOrder { get; set; }
     }
 }

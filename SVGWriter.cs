@@ -7,9 +7,14 @@ namespace GDStoSVG
 {
     public class SVGWriter
     {
+        /// <summary> The writer used to output to SVG file. </summary>
         private readonly StreamWriter Writer;
+
+        /// <summary> The placeholder layer used when one has not been defined in CSV data. </summary>
         private readonly Layer UnknownLayer;
 
+        /// <summary> Prepares the SVG file for writing data. </summary>
+        /// <param name="fileName"> The SVG file to write to. If it exists, it will be overwritten. </param>
         public SVGWriter(string fileName)
         {
             this.Writer = new StreamWriter(fileName);
@@ -37,6 +42,9 @@ namespace GDStoSVG
             }
         }
 
+        /// <summary> Writes a structure and all child elements, with a <see cref="Transform"/> applied. </summary>
+        /// <param name="structure"> The structure to output. </param>
+        /// <param name="trans"> The transform to apply to the structure and child elements. </param>
         public void WriteRoot(Structure structure, Transform trans)
         {
             if (structure.Elements == null) { return; } // No child elements, output nothing.
@@ -158,6 +166,7 @@ namespace GDStoSVG
             this.Writer.Write(@""" fill=""#" + Layer.Colour.ToString("X6") + @""" opacity=""" + Layer.Opacity + @""" />");
         }
 
+        /// <summary> Finished the SVG file, flushes the buffer, and releases the file resources. </summary>
         public void Finish()
         {
             this.Writer.WriteLine("</svg>");

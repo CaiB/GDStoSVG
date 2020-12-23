@@ -5,10 +5,16 @@ namespace GDStoSVG
 {
     public class GDSData
     {
+        /// <summary> The name of the library contained in the GDS data. </summary>
         public static string LibraryName { get; set; } = "Invalid Library Name";
+
+        /// <summary> All of the structures contained in the GDS file, accessable by their name (<see cref="Structure.Name"/>). </summary>
         public static Dictionary<string, Structure> Structures { get; private set; } = new Dictionary<string, Structure>();
+
+        /// <summary> The last structure read in form GDS data. This is usually the top-level structure, and the root of the default export. </summary>
         public static Structure? LastStructure;
 
+        /// <summary> Looks through all data that was read in to find all layers in use, then outputs this info to the console. </summary>
         public static void ScanLayers()
         {
             List<short> Layers = new List<short>();

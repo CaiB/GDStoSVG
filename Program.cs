@@ -8,9 +8,6 @@ namespace GDStoSVG
 
         // TODO LIST
         // Implement rendering text and other items
-        // command line arguments
-        // Layer detection mode switch
-        // double parse mode switch?
         // Text render only certain levels deep
         // Group items onto layers
         // Sort layers
@@ -80,6 +77,7 @@ namespace GDStoSVG
             SVG.Finish();
         }
 
+        /// <summary> Outputs basic usage information to the console. </summary>
         private static void PrintHelp()
         {
             Console.WriteLine("GDStoSVG: Converts GDSII data into SVG graphics for printing or viewing.");
@@ -89,6 +87,7 @@ namespace GDStoSVG
             Console.WriteLine("  [CSV file]: Name of the CSV file containing layer definitions");
             Console.WriteLine("    CSV expected format: No header, each line should contain:");
             Console.WriteLine("    <Name>, <ID in range -32768 to 32767>, <Colour, RRGGBB hex>, <Opacity in range 0.0 to 1.0>");
+            Console.WriteLine("    Layers will be stacked with the bottom line of CSV file on top in SVG, in order.");
             Console.WriteLine("  [-unit NAME]: Name of the top-level design unit to output, including all child elements.");
             Console.WriteLine("  [-info]: Outputs extra info about layers and units to help you in setting up output.");
             Console.WriteLine("  [-debug]: Use this if the program is misbehaving and you need to ask the developer.");
