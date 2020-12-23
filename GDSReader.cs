@@ -32,7 +32,7 @@ namespace GDStoSVG
                     if (StopReading) { break; }
                 }
             }
-            GDSData.LastStructure = this.Structures[this.Structures.Count - 1];
+            GDSData.LastStructure = this.Structures[^1];
 
             Console.WriteLine("Found {0} units in GDS file{1}", this.Structures.Count, (Program.Info ? ":" : "."));
             foreach (Structure Str in this.Structures)

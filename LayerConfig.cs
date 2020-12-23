@@ -37,7 +37,8 @@ namespace GDStoSVG
                         Name = Parts[0],
                         ID = short.Parse(Parts[1]),
                         Colour = Convert.ToUInt32(Parts[2], 16), // hex
-                        Opacity = float.Parse(Parts[3])
+                        Opacity = float.Parse(Parts[3]),
+                        SortOrder = LineNum - 1 // starts at 1, so offset down 1
                     };
                     LayerList.Add(Layer);
                     Line = Reader.ReadLine();
