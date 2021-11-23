@@ -25,7 +25,8 @@ namespace GDStoSVG
 
             for(int i = 0; i < args.Length; i++)
             {
-                if (i == 0) { GDSFile = args[i]; }
+                if (args[i].Equals("-help", StringComparison.OrdinalIgnoreCase)) { PrintHelp(); return; }
+                else if (i == 0) { GDSFile = args[i]; }
                 else if (args[i].Equals("-csv", StringComparison.OrdinalIgnoreCase) && args.Length > i + 1) { CSVFile = args[i + 1]; }
                 else if (args[i].Equals("-svg", StringComparison.OrdinalIgnoreCase) && args.Length > i + 1) { SVGFile = args[i + 1]; }
                 else if (args[i].Equals("-unit", StringComparison.OrdinalIgnoreCase) && args.Length > i + 1) { TopUnit = args[i + 1]; }

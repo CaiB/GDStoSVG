@@ -3,7 +3,7 @@
 Fully integrated system to convert GDSII format files, such as the ones exported from Cadence Virtuoso, into SVG graphics for printing or display.
 
 Prerequisites:
-- [.NET Core 3.1](https://dotnet.microsoft.com/download/dotnet-core)
+- [.NET 5](https://dotnet.microsoft.com/download/dotnet)
 
 Should work on Windows, Linux, and Mac. Theoretically big-endian platforms are also supported (untested).
 
@@ -11,6 +11,7 @@ Should work on Windows, Linux, and Mac. Theoretically big-endian platforms are a
 1) Export your layout as GDSII format from the CAD software you're using. (see below)
 2) Run this utility in info mode to determine layers, by running `GDStoSVG.exe <myfile.gds> -info`
 3) It will output design units and layer info to the console. Using this layer list, and the generated SVG file (same name as the input GDS), locate components on a specific layer (all items on a layer are grouped together), and determine what each layer ID corresponds to.
+    - If your SVG file is too large to open, you may want to export only a sub-unit to start, by using the `-unit <UNIT>` parameter, with one of the units listed from step 2.
 4) Create a CSV file with your layer IDs, names, colours, and opacities in the required format (see `GDStoSVG.exe -help` for info).
 5) Test your CSV file by running `GDStoSVG.exe <myfile.gds> -csv <layers.csv> -info`.
 6) Repeat until you are happy with the layer assignments, and there are no unassigned layers remaining (unless you don't care about those layers).
