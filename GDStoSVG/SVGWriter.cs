@@ -148,7 +148,7 @@ namespace GDStoSVG
             string Colour = Layer.Colour.ToString("X6");
             double Width = path.Width < 0 ? -path.Width : path.Width * trans.Magnification;
 
-            Out += string.Format(@""" stroke=""#" + Colour + @""" stroke-width=""" + Width + @""" opacity=""" + Layer.Opacity + @""" stroke-linecap=""" + EndcapType + @""" />");
+            Out += string.Format(@""" stroke=""#" + Colour + @""" stroke-width=""" + Width + @""" opacity=""" + Layer.Opacity + @""" stroke-linecap=""" + EndcapType + @""" fill=""none"" />");
             this.Output[(short)path.Layer].Add(Out);
         }
 
