@@ -15,7 +15,7 @@ namespace GDStoSVG
         private readonly Layer UnknownLayer;
 
         /// <summary> Holds all lines that will be stored in the SVG file, organized by <see cref="Layer.ID"/>. </summary>
-        private readonly Dictionary<short, List<string>> Output = new Dictionary<short, List<string>>();
+        private readonly Dictionary<short, List<string>> Output = new();
 
         private int MinX = int.MaxValue;
         private int MinY = int.MaxValue;
@@ -26,8 +26,7 @@ namespace GDStoSVG
         /// <param name="fileName"> The SVG file to write to. If it exists, it will be overwritten. </param>
         public SVGWriter(string fileName)
         {
-            this.Writer = new StreamWriter(fileName);
-            this.Writer.AutoFlush = false; // Don't flush after every write.
+            this.Writer = new(fileName) { AutoFlush = false }; // Don't flush after every write.
             this.Writer.WriteLine(@"<?xml version=""1.0"" standalone=""no""?>");
             this.Writer.WriteLine(@"<!DOCTYPE svg PUBLIC "" -//W3C//DTD SVG 1.1//EN"" ""http://www.w3.org/Graphics/SVG/1.1/DTD/svg11.dtd"">");
             this.UnknownLayer = new Layer
@@ -83,7 +82,7 @@ namespace GDStoSVG
         /// <param name="trans"> The transform to apply to the element, null if default should be used. </param>
         public void WriteElement(Element element, Transform? trans = null)
         {
-            if (trans == null) { trans = Transform.Default; }
+            trans ??= Transform.Default;
             switch(element)
             {
                 case Boundary Boundary: WriteBoundary(Boundary, trans); break;

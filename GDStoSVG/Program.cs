@@ -44,7 +44,7 @@ namespace GDStoSVG
 
             if (!File.Exists(GDSFile)) { Console.WriteLine("Could not find GDS file \"{0}\".", GDSFile); return; }
 
-            GDSReader GDS = new GDSReader();
+            GDSReader GDS = new();
             if (Debug) { GDS.TestDoubleParse(); }
             GDS.ReadFile(GDSFile);
             if (Info) { GDSData.ScanLayers(); }
@@ -53,7 +53,7 @@ namespace GDStoSVG
             if (TopUnit == null) { Console.WriteLine("Could not determine top-level unit."); return; }
             Console.WriteLine("Outputting unit \"{0}\" to \"{1}\".", TopUnit, SVGFile);
 
-            SVGWriter SVG = new SVGWriter(SVGFile);
+            SVGWriter SVG = new(SVGFile);
             SVG.WriteRoot(GDSData.Structures[TopUnit]);
             SVG.Finish();
             Console.WriteLine("Done!");

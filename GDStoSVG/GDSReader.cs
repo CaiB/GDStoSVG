@@ -11,7 +11,7 @@ namespace GDStoSVG
         private readonly bool IsLE;
 
         /// <summary> A list of the structures present in the file. </summary>
-        private readonly List<Structure> Structures = new List<Structure>();
+        private readonly List<Structure> Structures = new();
 
         public GDSReader() { this.IsLE = BitConverter.IsLittleEndian; }
 
@@ -19,7 +19,7 @@ namespace GDStoSVG
         /// <param name="fileName"> The name of the file to read from. </param>
         public void ReadFile(string fileName)
         {
-            using (BinaryReader Reader = new BinaryReader(File.Open(fileName, FileMode.Open)))
+            using (BinaryReader Reader = new(File.Open(fileName, FileMode.Open)))
             {
                 long FileLength = Reader.BaseStream.Length;
                 while (Reader.BaseStream.Position < FileLength)
@@ -322,7 +322,7 @@ namespace GDStoSVG
                     if (this.CurrentElement == null) { throw new InvalidDataException("Trying to assign property with no element to attach to."); }
                     if (this.CurrentProperty == null) { throw new InvalidDataException("Trying to assign property data without key."); }
                     if (data == null || data.Length == 0) { throw new InvalidDataException("Property value had insufficient data"); }
-                    if (this.CurrentElement.Properties == null) { this.CurrentElement.Properties = new Dictionary<short, string>(); }
+                    this.CurrentElement.Properties ??= new();
                     string Value = ParseString(data, 0, data.Length);
                     this.CurrentElement.Properties.Add((short)this.CurrentProperty, Value);
                     this.CurrentProperty = null;
@@ -330,7 +330,7 @@ namespace GDStoSVG
                 case RecordType.ENDEL:
                     if (this.CurrentStructure == null) { throw new InvalidDataException("Element ended outside of structure."); }
                     if (this.CurrentElement == null) { throw new InvalidDataException("Element ending before starting."); }
-                    if (this.CurrentStructure.Elements == null) { this.CurrentStructure.Elements = new List<Element>(); }
+                    this.CurrentStructure.Elements ??= new();
                     if (!this.CurrentElement.Check()) { Console.WriteLine("Element does not have all required data present."); }
                     this.CurrentStructure.Elements.Add(this.CurrentElement);
                     this.CurrentElement = null;

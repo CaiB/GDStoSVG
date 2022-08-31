@@ -17,7 +17,7 @@ namespace GDStoSVG
         /// <summary> Looks through all data that was read in to find all layers in use, then outputs this info to the console. </summary>
         public static void ScanLayers()
         {
-            List<short> Layers = new List<short>();
+            List<short> Layers = new();
             foreach(Structure Struct in Structures.Values)
             {
                 if(Struct.Elements == null) { continue; }

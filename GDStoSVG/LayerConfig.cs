@@ -15,11 +15,11 @@ namespace GDStoSVG
         /// <param name="configFile"> The filename of a CSV file to read from. </param>
         public static void ReadConfig(string configFile)
         {
-            List<Layer> LayerList = new List<Layer>();
-            using (StreamReader Reader = new StreamReader(configFile))
+            List<Layer> LayerList = new();
+            using (StreamReader Reader = new(configFile))
             {
                 string? Line = Reader.ReadLine();
-                Regex CSVParse = new Regex(",(?=(?:[^\"]*\"[^\"]*\")*(?![^\"]*\"))");
+                Regex CSVParse = new(",(?=(?:[^\"]*\"[^\"]*\")*(?![^\"]*\"))");
                 int LineNum = 1;
                 while (Line != null)
                 {
@@ -32,7 +32,7 @@ namespace GDStoSVG
                         continue;
                     }
 
-                    Layer Layer = new Layer
+                    Layer Layer = new()
                     {
                         Name = Parts[0],
                         ID = short.Parse(Parts[1]),
