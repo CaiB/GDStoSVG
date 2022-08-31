@@ -7,4 +7,10 @@
     <StartupObject>GDStoSVG.Program</StartupObject>
   </PropertyGroup>
 
+  <ItemGroup>
+    <Reference Include="Clipper2Lib">
+      <HintPath>..\Libraries\Clipper2Lib.dll</HintPath>
+    </Reference>
+  </ItemGroup>
+
 </Project>
