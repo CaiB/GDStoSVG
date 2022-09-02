@@ -1,5 +1,6 @@
 ﻿using System;
 using System.IO;
+using System.Threading.Tasks;
 
 namespace GDStoSVG;
 
@@ -13,7 +14,7 @@ public class Program
 
     public static bool Debug { get; private set; } = false;
     public static bool Info { get; private set; } = false;
-    public static bool DoOptimization { get; private set; }= false;
+    public static bool DoOptimization { get; private set; } = false;
 
     static void Main(string[] args)
     {
@@ -57,11 +58,15 @@ public class Program
         if (DoOptimization)
         {
             Console.WriteLine("Pre-optimizing geometry...");
-            foreach (Structure Struct in GDSData.Structures.Values) { Struct.OptimizeGeometry(); }
+            Parallel.ForEach(GDSData.Structures.Values, Struct => { Struct.OptimizeGeometry(); });
         }
 
         Console.WriteLine("Outputting unit \"{0}\" to \"{1}\"...", TopUnit, SVGFile);
-        if (DoOptimization) { Console.WriteLine("  (You selected geometry optimization, this could take a significant amount of time)"); }
+        if (DoOptimization)
+        {
+            Console.WriteLine("  (You selected geometry optimization, this could take a significant amount of time)");
+            GDSData.Structures[TopUnit].FlattenAndOptimize();
+        }
         SVGWriter SVG = new(SVGFile);
         SVG.WriteRoot(GDSData.Structures[TopUnit]);
         SVG.Finish();

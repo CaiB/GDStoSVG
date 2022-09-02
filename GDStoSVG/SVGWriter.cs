@@ -54,13 +54,14 @@ public class SVGWriter
         foreach(Layer Layer in LayersSorted)
         {
             if(!this.Output.ContainsKey(Layer.ID)) { continue; } // Nothing to output for this layer.
-            this.Writer.WriteLine(@"<g id=""" + Layer.Name + @""">");
+            this.Writer.WriteLine($"<g id=\"{Layer.Name}\" fill=\"#{Layer.Colour:X6}\" opacity=\"{Layer.Opacity}\">");
             foreach (string Line in this.Output[Layer.ID]) { this.Writer.WriteLine(Line); }
             this.Writer.WriteLine("</g>");
         }
         foreach(short ID in this.Output.Keys.Where(x => !LayersSorted.Exists(y => y.ID == x))) // Find layers in this.Output that aren't defined in the CSV file.
         {
-            this.Writer.WriteLine(@"<g id=""Unknown Layer " + ID + @""">");
+            Layer Layer = GetLayer(ID);
+            this.Writer.WriteLine($"<g id=\"Unknown Layer {ID}\" fill=\"#{Layer.Colour:X6}\" opacity=\"{Layer.Opacity}\">");
             foreach (string Line in this.Output[ID]) { this.Writer.WriteLine(Line); }
             this.Writer.WriteLine("</g>");
         }
@@ -112,8 +113,7 @@ public class SVGWriter
             if (i != bound.Coords.Length - 2) { Out += ' '; }
             UpdateExtents(Transformed.x, Transformed.y);
         }
-        Layer Layer = GetLayer((short)bound.Layer!);
-        Out += string.Format(@""" fill=""#" + Layer.Colour.ToString("X6") + @""" opacity=""" + Layer.Opacity + @""" />");
+        Out += "\" />";
         this.Output[(short)bound.Layer].Add(Out);
     }
 
@@ -123,8 +123,9 @@ public class SVGWriter
         if (geo.Geometry!.Count == 0) { Console.WriteLine("Skipping empty geometry."); return; }
         if (!this.Output.ContainsKey((short)geo.Layer!)) { this.Output.Add((short)geo.Layer, new List<string>()); }
 
-        foreach (List<Point64> Polygon in geo.Geometry)
+        foreach (List<PointD> Polygon in geo.Geometry)
         {
+            // TODO: Convert to StringBuilder
             string Out = @"<polygon points=""";
             for (int i = 0; i < Polygon.Count; i++) // Last element = first, so we don't write the last one.
             {
@@ -133,8 +134,7 @@ public class SVGWriter
                 if (i != Polygon.Count - 1) { Out += ' '; }
                 UpdateExtents(Transformed.x, Transformed.y);
             }
-            Layer Layer = GetLayer((short)geo.Layer!);
-            Out += string.Format(@""" fill=""#" + Layer.Colour.ToString("X6") + @""" opacity=""" + Layer.Opacity + @""" />");
+            Out += "\" />";
             this.Output[(short)geo.Layer].Add(Out);
         }
     }
@@ -158,10 +158,9 @@ public class SVGWriter
         if (path.PathType == 1) { EndcapType = "round"; }
         if (path.PathType == 2) { EndcapType = "square"; }
         Layer Layer = GetLayer((short)path.Layer!);
-        string Colour = Layer.Colour.ToString("X6");
         double Width = path.Width < 0 ? -path.Width : path.Width * trans.Magnification;
 
-        Out += string.Format(@""" stroke=""#" + Colour + @""" stroke-width=""" + Width + @""" opacity=""" + Layer.Opacity + @""" stroke-linecap=""" + EndcapType + @""" fill=""none"" />");
+        Out += $"\" stroke=\"#{Layer.Colour:X6}\" stroke-width=\"{Width}\" stroke-linecap=\"{EndcapType}\" fill=\"none\" />";
         this.Output[(short)path.Layer].Add(Out);
     }
 
@@ -223,8 +222,7 @@ public class SVGWriter
             if (i != box.Coords.Length - 2) { Out += ' '; }
             UpdateExtents(Transformed.x, Transformed.y);
         }
-        Layer Layer = GetLayer((short)box.Layer);
-        Out += string.Format(@""" fill=""#" + Layer.Colour.ToString("X6") + @""" opacity=""" + Layer.Opacity + @""" />");
+        Out += "\" />";
         this.Output[(short)box.Layer].Add(Out);
     }
 

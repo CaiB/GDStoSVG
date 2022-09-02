@@ -38,7 +38,8 @@ public class GDSReader
         Console.WriteLine("Found {0} units in GDS file{1}", this.Structures.Count, (Program.Info ? ":" : "."));
         foreach (Structure Str in this.Structures)
         {
-            if (Program.Info) { Console.WriteLine("  Unit \"{0}\"{1}", Str.Name, (Str == GDSData.LastStructure ? " -> Top-level unit" : "")); }
+            int ElementCount = Str.Elements?.Count ?? 0;
+            if (Program.Info) { Console.WriteLine("  Unit \"{0}\" ({1} object{2}){3}", Str.Name, ElementCount, (ElementCount != 1 ? "s" : ""), (Str == GDSData.LastStructure ? " -> Top-level unit" : "")); }
             GDSData.Structures.Add(Str.Name, Str);
         }
     }
@@ -169,7 +170,7 @@ public class GDSReader
                 if (this.CurrentElement == null) { throw new InvalidDataException("Trying to assign coordinates with no element."); }
                 if (data == null || data.Length == 0) { throw new InvalidDataException("Coordinate assignment had insufficient data"); }
                 if (data.Length % 8 != 0) { throw new InvalidDataException("XY coordinates had uneven number of elements"); }
-                Point64[] Coords = new Point64[data.Length / 8];
+                PointD[] Coords = new PointD[data.Length / 8];
                 for(int i = 0; i < Coords.Length; i++)
                 {
                     Coords[i] = new(ParseInt(data, i * 8), ParseInt(data, (i * 8) + 4));
