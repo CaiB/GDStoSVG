@@ -321,30 +321,50 @@ public class Transform
 
     public static readonly Transform Default = new();
 
-    /// <summary> Applies a transform from a parent element onto this one to produce a compound transform. </summary>
-    /// <param name="trans"> The parent element's transform. </param>
-    /// <returns> The new transform, with both sets of transformations applied. </returns>
-    public Transform ApplyParent(Transform trans)
+    private const double DEG_TO_RAD = (1D / 180D) * Math.PI;
+    private static double RotateX(double x, double y, double angle)
     {
-        double NewX = trans.PositionOffset.x + this.PositionOffset.x;
-        double NewY = trans.PositionOffset.y + (trans.YReflect ? -this.PositionOffset.y : this.PositionOffset.y);
+        if (angle == 0) { return x; }
+        if (angle == 90) { return -y; }
+        if (angle == 180) { return -x; }
+        if (angle == 270) { return y; }
+        return (x * Math.Cos(angle * DEG_TO_RAD)) - (y * Math.Sin(angle * DEG_TO_RAD));
+    }
+    private static double RotateY(double x, double y, double angle)
+    {
+        if (angle == 0) { return y; }
+        if (angle == 90) { return x; }
+        if (angle == 180) { return -y; }
+        if (angle == 270) { return -x; }
+        return (y * Math.Cos(angle * DEG_TO_RAD)) + (x * Math.Sin(angle * DEG_TO_RAD));
+    }
+
+    /// <summary> Applies a transform from a parent element onto this one to produce a compound transform. </summary>
+    /// <param name="parentTrans"> The parent element's transform. </param>
+    /// <returns> The new transform, with both sets of transformations applied. </returns>
+    public Transform ApplyParent(Transform parentTrans)
+    {
+        // Rotate, then magnify, then translate
+        double NewX = (RotateX(this.PositionOffset.x, this.PositionOffset.y, parentTrans.Angle) * parentTrans.Magnification) + parentTrans.PositionOffset.x;
+        double NewY = (RotateY(this.PositionOffset.x, this.PositionOffset.y, parentTrans.Angle) * parentTrans.Magnification) + parentTrans.PositionOffset.y;
+
         return new Transform
         {
-            YReflect = trans.YReflect ^ this.YReflect,
-            MagnificationAbsolute = trans.MagnificationAbsolute | this.MagnificationAbsolute,
-            AngleAbsolute = trans.AngleAbsolute | this.AngleAbsolute,
-            Magnification = trans.Magnification * this.Magnification,
-            Angle = trans.Angle + this.Angle,
+            YReflect = parentTrans.YReflect ^ this.YReflect,
+            MagnificationAbsolute = parentTrans.MagnificationAbsolute | this.MagnificationAbsolute,
+            AngleAbsolute = parentTrans.AngleAbsolute | this.AngleAbsolute,
+            Magnification = parentTrans.Magnification * this.Magnification,
+            Angle = parentTrans.Angle + this.Angle,
             PositionOffset = new(NewX, NewY)
         };
     }
 
     public PointD ApplyTo(Point64 point)
     {
-        double X = point.X;
-        double Y = this.YReflect ? -point.Y : point.Y;
-        X = (X * Math.Cos(this.Angle / 180 * Math.PI)) - (Y * Math.Sin(this.Angle / 180 * Math.PI));
-        Y = (Y * Math.Cos(this.Angle / 180 * Math.PI)) + (X * Math.Sin(this.Angle / 180 * Math.PI));
+        long InX = point.X;
+        long InY = this.YReflect ? -point.Y : point.Y;
+        double X = RotateX(InX, InY, this.Angle);
+        double Y = RotateY(InX, InY, this.Angle);
         X *= this.Magnification;
         Y *= this.Magnification;
         X += this.PositionOffset.x;
@@ -354,10 +374,10 @@ public class Transform
 
     public PointD ApplyTo(PointD point)
     {
-        double X = point.x;
-        double Y = this.YReflect ? -point.y : point.y;
-        X = (X * Math.Cos(this.Angle / 180 * Math.PI)) - (Y * Math.Sin(this.Angle / 180 * Math.PI));
-        Y = (Y * Math.Cos(this.Angle / 180 * Math.PI)) + (X * Math.Sin(this.Angle / 180 * Math.PI));
+        double InX = point.x;
+        double InY = this.YReflect ? -point.y : point.y;
+        double X = RotateX(InX, InY, this.Angle);
+        double Y = RotateY(InX, InY, this.Angle);
         X *= this.Magnification;
         Y *= this.Magnification;
         X += this.PositionOffset.x;
