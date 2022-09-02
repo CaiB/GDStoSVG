@@ -63,8 +63,10 @@ public class Structure
             {
                 if (!SubStructRef.Check()) { Console.WriteLine("Skipping invalid structure reference"); continue; } // StructureName, Coords are non-null after
                 Structure SubStruct = GDSData.Structures[SubStructRef.StructureName!];
-                SubStructRef.Transform.PositionOffset = SubStructRef.Coords![0];
-                Transform NewTrans = SubStructRef.Transform.ApplyParent(trans);
+                //trans.PositionOffset = SubStructRef.Coords![0];
+                SubStructRef.Transform.PositionOffset = SubStructRef.Coords![0]; // orig
+                Transform NewTrans = trans.ApplyParent(SubStructRef.Transform);
+                //Transform NewTrans = SubStructRef.Transform.ApplyParent(trans); // orig
                 SubStruct.FlattenAndOptimize(NewTrans, targetList);
                 ToRemove.Add(SubStructRef);
                 if (SubStruct.Elements == null) { continue; }
@@ -343,6 +345,8 @@ public class Transform
         double Y = this.YReflect ? -point.Y : point.Y;
         X = (X * Math.Cos(this.Angle / 180 * Math.PI)) - (Y * Math.Sin(this.Angle / 180 * Math.PI));
         Y = (Y * Math.Cos(this.Angle / 180 * Math.PI)) + (X * Math.Sin(this.Angle / 180 * Math.PI));
+        X *= this.Magnification;
+        Y *= this.Magnification;
         X += this.PositionOffset.x;
         Y += this.PositionOffset.y;
         return new(X, Y);
@@ -354,6 +358,8 @@ public class Transform
         double Y = this.YReflect ? -point.y : point.y;
         X = (X * Math.Cos(this.Angle / 180 * Math.PI)) - (Y * Math.Sin(this.Angle / 180 * Math.PI));
         Y = (Y * Math.Cos(this.Angle / 180 * Math.PI)) + (X * Math.Sin(this.Angle / 180 * Math.PI));
+        X *= this.Magnification;
+        Y *= this.Magnification;
         X += this.PositionOffset.x;
         Y += this.PositionOffset.y;
         return new(X, Y);
