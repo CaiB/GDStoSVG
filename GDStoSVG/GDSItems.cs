@@ -1,6 +1,7 @@
 ﻿using Clipper2Lib;
 using System;
 using System.Collections.Generic;
+using System.IO;
 using System.Linq;
 
 namespace GDStoSVG;
@@ -26,6 +27,12 @@ public class Structure
             this.Elements.RemoveAll(El => OnLayer.Contains(El));
             this.Elements.Add(NewGeo);
         }
+    }
+
+    private void OptimizeAndMergeSubStructures()
+    {
+        if (Elements == null) { return; }
+
     }
 }
 
@@ -59,9 +66,24 @@ public class Path : LayerElement
     public short? Datatype = null;
     public short PathType = 0;
     public int Width = 0; // negative means not affected by magnification
+    public int ExtensionStart, ExtensionEnd; // Only used if PathType is 4. Can be negative.
 
     public override bool Check() => this.Layer != null && this.Datatype != null && this.Coords != null;
-    public override List<Point64>? GetPolygonCoords() => null; // TODO: Implement this, it's going to be not so easy though
+    public override List<Point64>? GetPolygonCoords()
+    {
+        if(this.Coords == null) { return null; }
+        List<List<Point64>> Input = new() { new(this.Coords) };
+        EndType Ends = EndType.Butt;
+        if (this.PathType == 1) { Ends = EndType.Round; }
+        if (this.PathType == 2) { Ends = EndType.Square; }
+        if (this.PathType == 4)
+        {
+            // TODO: A whole bunch of stuff here
+        }
+        List<List<Point64>> Output = Clipper.InflatePaths(Input, -Math.Abs(this.Width), JoinType.Square, Ends);
+        if (Output.Count != 1) { throw new InvalidDataException("Trying to convert paths to polygons resulted in multiple polygons."); }
+        return Output[0];
+    }
 }
 
 public class StructureRef : Element
@@ -155,5 +177,27 @@ public class Transform
             Angle = trans.Angle + this.Angle,
             PositionOffset = new(NewX, NewY)
         };
+    }
+
+    public PointD ApplyTo(Point64 point)
+    {
+        double X = point.X;
+        double Y = this.YReflect ? -point.Y : point.Y;
+        X = (X * Math.Cos(this.Angle / 180 * Math.PI)) - (Y * Math.Sin(this.Angle / 180 * Math.PI));
+        Y = (Y * Math.Cos(this.Angle / 180 * Math.PI)) + (X * Math.Sin(this.Angle / 180 * Math.PI));
+        X += this.PositionOffset.X;
+        Y += this.PositionOffset.Y;
+        return new(X, Y);
+    }
+
+    public PointD ApplyTo(PointD point)
+    {
+        double X = point.x;
+        double Y = this.YReflect ? -point.y : point.y;
+        X = (X * Math.Cos(this.Angle / 180 * Math.PI)) - (Y * Math.Sin(this.Angle / 180 * Math.PI));
+        Y = (Y * Math.Cos(this.Angle / 180 * Math.PI)) + (X * Math.Sin(this.Angle / 180 * Math.PI));
+        X += this.PositionOffset.X;
+        Y += this.PositionOffset.Y;
+        return new(X, Y);
     }
 }

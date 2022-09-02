@@ -203,7 +203,16 @@ public class GDSReader
                 else { throw new InvalidOperationException("Tried to assign width to element which cannot accept width data."); }
                 break;
             case RecordType.BGNEXTN: // optional; Specific to CustomPlus software.
+                if (this.CurrentElement is not Path Pth2) { throw new InvalidDataException("Trying to assign path beginning extension without active path element."); }
+                if (data == null || data.Length < 4) { throw new InvalidDataException("Path beginning extension had insufficient data"); }
+                int PathExtensionStart = ParseInt(data, 0);
+                Pth2.ExtensionStart = PathExtensionStart;
+                break;
             case RecordType.ENDEXTN:
+                if (this.CurrentElement is not Path Pth3) { throw new InvalidDataException("Trying to assign path end extension without active path element."); }
+                if (data == null || data.Length < 4) { throw new InvalidDataException("Path end extension had insufficient data"); }
+                int PathExtensionEnd = ParseInt(data, 0);
+                Pth3.ExtensionEnd = PathExtensionEnd;
                 break;
             case RecordType.SNAME:
                 if (this.CurrentElement == null) { throw new InvalidDataException("Trying to assign structure reference with no element."); }

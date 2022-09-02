@@ -11,9 +11,9 @@ public class Program
     // Text render only certain levels deep
     // Implement polygon union in-application. Inkscape is insanely slow doing this.
 
-    public static bool Debug = false;
-    public static bool Info = false;
-    public static bool DoOptimization = false;
+    public static bool Debug { get; private set; } = false;
+    public static bool Info { get; private set; } = false;
+    public static bool DoOptimization { get; private set; }= false;
 
     static void Main(string[] args)
     {
@@ -56,12 +56,12 @@ public class Program
 
         if (DoOptimization)
         {
-            Console.WriteLine("Optimizing geometry, this may take a while...");
+            Console.WriteLine("Pre-optimizing geometry...");
             foreach (Structure Struct in GDSData.Structures.Values) { Struct.OptimizeGeometry(); }
-            Console.WriteLine("Finished optimizing geometry.");
         }
 
         Console.WriteLine("Outputting unit \"{0}\" to \"{1}\"...", TopUnit, SVGFile);
+        if (DoOptimization) { Console.WriteLine("  (You selected geometry optimization, this could take a significant amount of time)"); }
         SVGWriter SVG = new(SVGFile);
         SVG.WriteRoot(GDSData.Structures[TopUnit]);
         SVG.Finish();
@@ -83,5 +83,7 @@ public class Program
         Console.WriteLine("  [-unit NAME]: Name of the top-level design unit to output, including all child elements.");
         Console.WriteLine("  [-info]: Outputs extra info about layers and units to help you in setting up output.");
         Console.WriteLine("  [-debug]: Use this if the program is misbehaving and you need to ask the developer.");
+        Console.WriteLine("  [-optimize]: Attempt to simplify all geometry to produce a more optimized CSV file.");
+        Console.WriteLine("    Warning: this could make processing take much longer!");
     }
 }

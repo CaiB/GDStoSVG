@@ -107,15 +107,10 @@ public class SVGWriter
         string Out = @"<polygon points=""";
         for(int i = 0; i < bound.Coords.Length - 1; i++) // Last element = first, so we don't write the last one.
         {
-            double X = bound.Coords[i].X;
-            double Y = trans.YReflect ? -bound.Coords[i].Y : bound.Coords[i].Y;
-            X = (X * Math.Cos(trans.Angle / 180 * Math.PI)) - (Y * Math.Sin(trans.Angle / 180 * Math.PI));
-            Y = (Y * Math.Cos(trans.Angle / 180 * Math.PI)) + (X * Math.Sin(trans.Angle / 180 * Math.PI));
-            X += trans.PositionOffset.X;
-            Y += trans.PositionOffset.Y;
-            Out += string.Format("{0},{1}", X, -Y); // SVG has inverted Y
+            PointD Transformed = trans.ApplyTo(bound.Coords[i]);
+            Out += string.Format("{0},{1}", Transformed.x, -Transformed.y); // SVG has inverted Y
             if (i != bound.Coords.Length - 2) { Out += ' '; }
-            UpdateExtents(X, Y);
+            UpdateExtents(Transformed.x, Transformed.y);
         }
         Layer Layer = GetLayer((short)bound.Layer!);
         Out += string.Format(@""" fill=""#" + Layer.Colour.ToString("X6") + @""" opacity=""" + Layer.Opacity + @""" />");
@@ -133,15 +128,10 @@ public class SVGWriter
             string Out = @"<polygon points=""";
             for (int i = 0; i < Polygon.Count; i++) // Last element = first, so we don't write the last one.
             {
-                double X = Polygon[i].X;
-                double Y = trans.YReflect ? -Polygon[i].Y : Polygon[i].Y;
-                X = (X * Math.Cos(trans.Angle / 180 * Math.PI)) - (Y * Math.Sin(trans.Angle / 180 * Math.PI));
-                Y = (Y * Math.Cos(trans.Angle / 180 * Math.PI)) + (X * Math.Sin(trans.Angle / 180 * Math.PI));
-                X += trans.PositionOffset.X;
-                Y += trans.PositionOffset.Y;
-                Out += string.Format("{0},{1}", X, -Y); // SVG has inverted Y
+                PointD Transformed = trans.ApplyTo(Polygon[i]);
+                Out += string.Format("{0},{1}", Transformed.x, -Transformed.y); // SVG has inverted Y
                 if (i != Polygon.Count - 1) { Out += ' '; }
-                UpdateExtents(X, Y);
+                UpdateExtents(Transformed.x, Transformed.y);
             }
             Layer Layer = GetLayer((short)geo.Layer!);
             Out += string.Format(@""" fill=""#" + Layer.Colour.ToString("X6") + @""" opacity=""" + Layer.Opacity + @""" />");
@@ -158,15 +148,10 @@ public class SVGWriter
         string Out = @"<polyline points=""";
         for(int i = 0; i < path.Coords.Length; i++)
         {
-            double X = path.Coords[i].X;
-            double Y = trans.YReflect ? -path.Coords[i].Y : path.Coords[i].Y;
-            X = (X * Math.Cos(trans.Angle / 180 * Math.PI)) - (Y * Math.Sin(trans.Angle / 180 * Math.PI));
-            Y = (Y * Math.Cos(trans.Angle / 180 * Math.PI)) + (X * Math.Sin(trans.Angle / 180 * Math.PI));
-            X += trans.PositionOffset.X;
-            Y += trans.PositionOffset.Y;
-            Out += string.Format("{0},{1}", X, -Y); // SVG has inverted Y
+            PointD Transformed = trans.ApplyTo(path.Coords[i]);
+            Out += string.Format("{0},{1}", Transformed.x, -Transformed.y); // SVG has inverted Y
             if (i != path.Coords.Length - 1) { Out += ' '; }
-            UpdateExtents(X, Y);
+            UpdateExtents(Transformed.x, Transformed.y);
         }
 
         string EndcapType = "butt"; // Doesn't support type 4.
@@ -200,13 +185,8 @@ public class SVGWriter
         if (text.Coords!.Length < 1) { Console.WriteLine("Skipping text with no location."); return; }
         if (!this.Output.ContainsKey((short)text.Layer!)) { this.Output.Add((short)text.Layer, new List<string>()); }
 
-        double X = text.Coords[0].X;
-        double Y = trans.YReflect ? -text.Coords[0].Y : text.Coords[0].Y;
-        X = (X * Math.Cos(trans.Angle / 180 * Math.PI)) - (Y * Math.Sin(trans.Angle / 180 * Math.PI));
-        Y = (Y * Math.Cos(trans.Angle / 180 * Math.PI)) + (X * Math.Sin(trans.Angle / 180 * Math.PI));
-        X += trans.PositionOffset.X;
-        Y += trans.PositionOffset.Y;
-        UpdateExtents(X, Y);
+        PointD Transformed = trans.ApplyTo(text.Coords[0]);
+        UpdateExtents(Transformed.x, Transformed.y);
 
         Layer Layer = GetLayer((short)text.Layer);
         string Align = "start";
@@ -216,7 +196,7 @@ public class SVGWriter
         if (text.VerticalPresentation == Text.VerticalAlign.MIDDLE) { Base = "middle"; }
         else if (text.VerticalPresentation == Text.VerticalAlign.TOP) { Base = "hanging"; }
         // TODO: Deal with font size, Virtuoso seems to output no data?
-        string Out = string.Format("<text x=\"{0}\" y=\"{1}\" text-anchor=\"{2}\" dominant-baseline=\"{3}\" color=\"#{4:X6}\" font-size=\"{5}\">", X, -Y, Align, Base, Layer.Colour, 100);// (text.Width < 0 ? -text.Width : text.Width * trans.Magnification));
+        string Out = string.Format("<text x=\"{0}\" y=\"{1}\" text-anchor=\"{2}\" dominant-baseline=\"{3}\" color=\"#{4:X6}\" font-size=\"{5}\">", Transformed.x, -Transformed.y, Align, Base, Layer.Colour, 100);// (text.Width < 0 ? -text.Width : text.Width * trans.Magnification));
         string TextEsc = text.String ?? "";
         TextEsc = TextEsc.Replace("&", "&amp;").Replace("\"", "&quot;").Replace("'", "&apos;").Replace("<", "&lt;").Replace(">", "&gt;");
         Out += TextEsc;
@@ -238,15 +218,10 @@ public class SVGWriter
         string Out = @"<polygon points=""";
         for (int i = 0; i < box.Coords.Length - 1; i++) // Last element = first, so we don't write the last one.
         {
-            double X = box.Coords[i].X;
-            double Y = trans.YReflect ? -box.Coords[i].Y : box.Coords[i].Y;
-            X = (X * Math.Cos(trans.Angle / 180 * Math.PI)) - (Y * Math.Sin(trans.Angle / 180 * Math.PI));
-            Y = (Y * Math.Cos(trans.Angle / 180 * Math.PI)) + (X * Math.Sin(trans.Angle / 180 * Math.PI));
-            X += trans.PositionOffset.X;
-            Y += trans.PositionOffset.Y;
-            Out += string.Format("{0},{1}", X, -Y); // SVG has inverted Y
+            PointD Transformed = trans.ApplyTo(box.Coords[i]);
+            Out += string.Format("{0},{1}", Transformed.x, -Transformed.y); // SVG has inverted Y
             if (i != box.Coords.Length - 2) { Out += ' '; }
-            UpdateExtents(X, Y);
+            UpdateExtents(Transformed.x, Transformed.y);
         }
         Layer Layer = GetLayer((short)box.Layer);
         Out += string.Format(@""" fill=""#" + Layer.Colour.ToString("X6") + @""" opacity=""" + Layer.Opacity + @""" />");
