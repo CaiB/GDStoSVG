@@ -46,6 +46,7 @@ public class Structure
         }
     }
 
+    // This assumes all underlying geometry has been pre-optimized with OptimizeGeometry() first. Meaning there are no Box, Path, or Boundary objects remaining.
     public void FlattenAndOptimize(Transform? trans = null, List<Element>? targetList = null)
     {
         if (Elements == null || this.IsFlattened) { return; }
@@ -155,7 +156,7 @@ public class Boundary : LayerElement
 }
 
 public class Path : LayerElement
-{
+{ // TODO: Path type 0 (butt) paths of 0 length are not correctly handled if optimizing
     public short? Datatype = null;
     public short PathType = 0;
     public int Width = 0; // negative means not affected by magnification
@@ -165,18 +166,59 @@ public class Path : LayerElement
     public override List<PointD>? GetPolygonCoords()
     {
         if(this.Coords == null) { return null; }
-        List<List<PointD>> Input = new() { new(this.Coords) };
         EndType Ends = EndType.Butt;
         if (this.PathType == 1) { Ends = EndType.Round; }
         if (this.PathType == 2) { Ends = EndType.Square; }
-        if (this.PathType == 4)
-        {
-            // TODO: A whole bunch of stuff here
-        }
+        if (this.PathType == 4) { ConvertType4(); } // Start and end extensions separately defined, apply them manually, then treat as butt
+        List<List<PointD>> Input = new() { new(this.Coords) };
         List<List<PointD>> Output = Clipper.InflatePaths(Input, -Math.Abs(this.Width), JoinType.Square, Ends);
         if (Output.Count != 1) { throw new InvalidDataException("Trying to convert paths to polygons resulted in multiple polygons."); }
         return Output[0];
     }
+
+    public void ConvertType4()
+    {
+        if (this.Coords != null && this.Coords.Length >= 2)
+        {
+            if (this.ExtensionStart != 0)
+            {
+                double StartDeltaX = this.Coords[1].x - this.Coords[0].x;
+                double StartDeltaY = this.Coords[1].y - this.Coords[0].y;
+                if (StartDeltaY == 0) { this.Coords[0].x -= (StartDeltaX >= 0) ? this.ExtensionStart : -this.ExtensionStart; } // Horizontal
+                else if (StartDeltaX == 0) { this.Coords[0].y -= (StartDeltaY >= 0) ? this.ExtensionStart : -this.ExtensionStart; } // Vertical
+                else // Angled
+                {
+                    double Slope = StartDeltaY / StartDeltaX;
+                    double XIncr = Math.Abs(this.ExtensionStart) / Math.Sqrt((Slope * Slope) + 1); // Always pos
+                    double YIncr = Math.Abs(Slope) * XIncr; // Always pos
+                    bool XOffsetIsPos = (StartDeltaX > 0) ^ (this.ExtensionStart > 0);
+                    bool YOffsetIsPos = (StartDeltaY > 0) ^ (this.ExtensionStart > 0);
+                    this.Coords[0].x += XOffsetIsPos ? XIncr : -XIncr;
+                    this.Coords[0].y += YOffsetIsPos ? YIncr : -YIncr;
+                }
+            }
+            if (this.ExtensionEnd != 0)
+            {
+                double EndDeltaX = this.Coords[^1].x - this.Coords[^2].x;
+                double EndDeltaY = this.Coords[^1].y - this.Coords[^2].y;
+                if (EndDeltaY == 0) { this.Coords[^1].x += (EndDeltaX >= 0) ? this.ExtensionEnd : -this.ExtensionEnd; } // Horizontal
+                else if (EndDeltaX == 0) { this.Coords[^1].y += (EndDeltaY >= 0) ? this.ExtensionEnd : -this.ExtensionEnd; } // Vertical
+                else // Angled
+                {
+                    double Slope = EndDeltaY / EndDeltaX;
+                    double XIncr = Math.Abs(this.ExtensionEnd) / Math.Sqrt((Slope * Slope) + 1); // Always pos
+                    double YIncr = Math.Abs(Slope) * XIncr; // Always pos
+                    bool XOffsetIsNeg = (EndDeltaX > 0) ^ (this.ExtensionEnd > 0); // Note inverted logic from start for these 4 lines
+                    bool YOffsetIsNeg = (EndDeltaY > 0) ^ (this.ExtensionEnd > 0);
+                    this.Coords[^1].x += XOffsetIsNeg ? -XIncr : XIncr;
+                    this.Coords[^1].y += YOffsetIsNeg ? -YIncr : YIncr;
+                }
+            }
+        }
+        else { throw new InvalidDataException("Trying to convert type 4 path to polygon with no or too few points."); }
+        this.PathType = 0;
+    }
+
     public override Path Clone() => new()
     {
         Coords = (PointD[]?)this.Coords?.Clone(),

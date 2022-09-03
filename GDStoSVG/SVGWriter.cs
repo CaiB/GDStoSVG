@@ -146,6 +146,11 @@ public class SVGWriter
         if (path.Coords!.Length < 2) { Console.WriteLine("Skipping path with less than 2 points."); return; }
         if (!this.Output.ContainsKey((short)path.Layer!)) { this.Output.Add((short)path.Layer, new List<string>()); }
 
+        string EndcapType = "butt";
+        if (path.PathType == 1) { EndcapType = "round"; }
+        if (path.PathType == 2) { EndcapType = "square"; } // TODO: This doesn't properly handle 0-length paths. Works if optimizing though.
+        if (path.PathType == 4) { path.ConvertType4(); } // Converts to butt type by adjusting ends
+
         string Out = @"<polyline points=""";
         for(int i = 0; i < path.Coords.Length; i++)
         {
@@ -155,9 +160,6 @@ public class SVGWriter
             UpdateExtents(Transformed.x, Transformed.y);
         }
 
-        string EndcapType = "butt"; // Doesn't support type 4.
-        if (path.PathType == 1) { EndcapType = "round"; }
-        if (path.PathType == 2) { EndcapType = "square"; }
         Layer Layer = GetLayer((short)path.Layer!);
         double Width = path.Width < 0 ? -path.Width : path.Width * trans.Magnification;
 
