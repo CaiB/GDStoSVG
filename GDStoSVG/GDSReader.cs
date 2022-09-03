@@ -343,7 +343,7 @@ public class GDSReader
                 if (this.CurrentElement == null) { throw new InvalidDataException("Element ending before starting."); }
                 this.CurrentStructure.Elements ??= new();
                 if (!this.CurrentElement.Check()) { Console.WriteLine("Element does not have all required data present."); }
-                this.CurrentStructure.Elements.Add(this.CurrentElement);
+                if (this.CurrentElement is not Text || !Program.IgnoreAllText) { this.CurrentStructure.Elements.Add(this.CurrentElement); }
                 this.CurrentElement = null;
                 break;
         }

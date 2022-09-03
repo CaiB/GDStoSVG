@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.Diagnostics;
 using System.IO;
 using System.Threading.Tasks;
 
@@ -16,9 +17,12 @@ public class Program
     public static bool Debug { get; private set; } = false;
     public static bool Info { get; private set; } = false;
     public static bool DoOptimization { get; private set; } = false;
+    public static bool IgnoreAllText { get; private set; } = false;
 
     static void Main(string[] args)
     {
+        Stopwatch Stopwatch = new();
+        Stopwatch.Restart();
         if(args.Length < 1) { PrintHelp(); return; }
 
         string? GDSFile = null;
@@ -36,6 +40,7 @@ public class Program
             else if (args[i].Equals("-info", StringComparison.OrdinalIgnoreCase)) { Info = true; }
             else if (args[i].Equals("-debug", StringComparison.OrdinalIgnoreCase)) { Debug = true; }
             else if (args[i].Equals("-optimize", StringComparison.OrdinalIgnoreCase)) { DoOptimization = true; }
+            else if (args[i].Equals("-ignoretext", StringComparison.OrdinalIgnoreCase)) { IgnoreAllText = true; }
         }
 
         if (GDSFile == null) { PrintHelp(); return; }
@@ -71,7 +76,8 @@ public class Program
         SVGWriter SVG = new(SVGFile);
         SVG.WriteRoot(GDSData.Structures[TopUnit]);
         SVG.Finish();
-        Console.WriteLine("Done!");
+        Stopwatch.Stop();
+        Console.WriteLine("Done! Time taken: {0}", Stopwatch.Elapsed);
     }
 
     /// <summary> Outputs basic usage information to the console. </summary>
@@ -89,6 +95,7 @@ public class Program
         Console.WriteLine("  [-unit NAME]: Name of the top-level design unit to output, including all child elements.");
         Console.WriteLine("  [-info]: Outputs extra info about layers and units to help you in setting up output.");
         Console.WriteLine("  [-debug]: Use this if the program is misbehaving and you need to ask the developer.");
+        Console.WriteLine("  [-ignoretext]: Ignores all text elements, preventing them from being output to the SVG.");
         Console.WriteLine("  [-optimize]: Attempt to simplify all geometry to produce a more optimized CSV file.");
         Console.WriteLine("    Warning: this could make processing take much longer!");
     }
