@@ -3,7 +3,6 @@ using System;
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
-using System.Reflection.Metadata.Ecma335;
 
 namespace GDStoSVG;
 
@@ -42,7 +41,7 @@ public class Structure
                  Geometry = OptGeometry,
                  Layer = OnLayer.Key
             };
-            foreach (Element El in OnLayer) { this.Elements.Remove(El); } // TODO: This is very inefficient when there are many elements in the structure.
+            foreach (Element El in OnLayer) { this.Elements.Remove(El); } // How come I'm allowed to modify this.Elements while enumerating?
             this.Elements.Add(NewGeo);
         }
     }
@@ -63,11 +62,8 @@ public class Structure
             {
                 if (!SubStructRef.Check()) { Console.WriteLine("Skipping invalid structure reference"); continue; } // StructureName, Coords are non-null after
                 Structure SubStruct = GDSData.Structures[SubStructRef.StructureName!];
-                //trans.PositionOffset = SubStructRef.Coords![0];
-                SubStructRef.Transform.PositionOffset = SubStructRef.Coords![0]; // orig
-                Transform NewTrans = trans.ApplyParent(SubStructRef.Transform);
-                //Transform NewTrans = SubStructRef.Transform.ApplyParent(trans); // orig
-                SubStruct.FlattenAndOptimize(NewTrans, targetList);
+                SubStructRef.Transform.PositionOffset = SubStructRef.Coords![0];
+                SubStruct.FlattenAndOptimize(SubStructRef.Transform, targetList);
                 ToRemove.Add(SubStructRef);
                 if (SubStruct.Elements == null) { continue; }
                 foreach(Element El in SubStruct.Elements)
@@ -77,7 +73,8 @@ public class Structure
                         OptimizedGeometry GeoCopy = Geo.Clone();
                         for(int i = 0; i < GeoCopy.Geometry!.Count; i++)
                         {
-                            for (int j = 0; j < GeoCopy.Geometry[i].Count; j++) { GeoCopy.Geometry[i][j] = NewTrans.ApplyTo(GeoCopy.Geometry[i][j]); }
+                            for (int j = 0; j < GeoCopy.Geometry[i].Count; j++) { GeoCopy.Geometry[i][j] = SubStructRef.Transform.ApplyTo(GeoCopy.Geometry[i][j]); }
+                            if (SubStructRef.Transform.YReflect) { GeoCopy.Geometry[i].Reverse(); } // A Y-reflect means reversing the polygon direction, so reverse it back
                         }
                         ToAdd.Add(GeoCopy);
                     }
@@ -86,13 +83,13 @@ public class Structure
                         LayerElement ElCopy = LEl.Clone();
                         if(ElCopy.Coords != null)
                         {
-                            for (int i = 0; i < ElCopy.Coords.Length; i++) { ElCopy.Coords[i] = NewTrans.ApplyTo(ElCopy.Coords[i]); }
+                            for (int i = 0; i < ElCopy.Coords.Length; i++) { ElCopy.Coords[i] = SubStructRef.Transform.ApplyTo(ElCopy.Coords[i]); }
                         }
                         ToAdd.Add(ElCopy);
                     }
                     else
                     {
-                        Console.WriteLine("Optimizing unsupported child item: " + El);
+                        Console.WriteLine("Tried to optimize unsupported child item: " + El);
                     }
                 }
             }
@@ -346,7 +343,8 @@ public class Transform
     {
         // Rotate, then magnify, then translate
         double NewX = (RotateX(this.PositionOffset.x, this.PositionOffset.y, parentTrans.Angle) * parentTrans.Magnification) + parentTrans.PositionOffset.x;
-        double NewY = (RotateY(this.PositionOffset.x, this.PositionOffset.y, parentTrans.Angle) * parentTrans.Magnification) + parentTrans.PositionOffset.y;
+        double RotMagY = (RotateY(this.PositionOffset.x, this.PositionOffset.y, parentTrans.Angle) * parentTrans.Magnification);
+        double NewY = (parentTrans.YReflect ? -RotMagY : RotMagY) + parentTrans.PositionOffset.y;
 
         return new Transform
         {

@@ -125,17 +125,18 @@ public class SVGWriter
 
         foreach (List<PointD> Polygon in geo.Geometry)
         {
-            // TODO: Convert to StringBuilder
-            string Out = @"<polygon points=""";
+            StringBuilder Out = new(@"<polygon points=""", 30 + (Polygon.Count * 15)); // Just an estimate of capacity to prevent multiple re-allocations
             for (int i = 0; i < Polygon.Count; i++) // Last element = first, so we don't write the last one.
             {
                 PointD Transformed = trans.ApplyTo(Polygon[i]);
-                Out += string.Format("{0},{1}", Transformed.x, -Transformed.y); // SVG has inverted Y
-                if (i != Polygon.Count - 1) { Out += ' '; }
+                Out.Append(Transformed.x);
+                Out.Append(',');
+                Out.Append(-Transformed.y); // SVG has inverted Y
+                if (i != Polygon.Count - 1) { Out.Append(' '); }
                 UpdateExtents(Transformed.x, Transformed.y);
             }
-            Out += "\" />";
-            this.Output[(short)geo.Layer].Add(Out);
+            Out.Append("\" />");
+            this.Output[(short)geo.Layer].Add(Out.ToString());
         }
     }
 
