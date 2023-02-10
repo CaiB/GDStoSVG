@@ -329,7 +329,6 @@ public class GDSReader
                 this.CurrentProperty = ParseShort(data, 0);
                 break;
             case RecordType.PROPVALUE:
-                if (this.CurrentProperty != null) { throw new InvalidDataException("New property starting before previous one had value assigned."); }
                 if (this.CurrentElement == null) { throw new InvalidDataException("Trying to assign property with no element to attach to."); }
                 if (this.CurrentProperty == null) { throw new InvalidDataException("Trying to assign property data without key."); }
                 if (data == null || data.Length == 0) { throw new InvalidDataException("Property value had insufficient data"); }
